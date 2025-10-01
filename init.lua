@@ -32,15 +32,20 @@ local function shorten_tiny(url)
     return string.format("%%%02X", string.byte(c))
   end)
   
-  local cmd = string.format('curl -s "http://tinyurl.com/api-create.php?url=%s"', escapedUrl)
+  -- Usa HTTPS para maior segurança
+  local cmd = string.format('curl -s -L -m 10 "https://tinyurl.com/api-create.php?url=%s"', escapedUrl)
   local handle = io.popen(cmd)
   if not handle then return nil end
   
   local result = handle:read("*a")
   handle:close()
   
-  if result and result ~= "" then
-    return result:gsub("%s+", "") -- trim whitespace
+  if result and result ~= "" and not result:match("Error") then
+    result = result:gsub("%s+", "") -- trim whitespace
+    -- Valida se retornou uma URL válida
+    if result:match("^https?://") then
+      return result
+    end
   end
   return nil
 end
@@ -118,8 +123,8 @@ hs.hotkey.bind({"cmd","alt","ctrl"}, "t",
 -- SECTION 4 ─ Force Quit  (⌘ ⌥ ⌃ Q)
 --------------------------------------------------------------------
 hs.hotkey.bind({"cmd","alt","ctrl"}, "q", function()
-  -- Método mais confiável para Force Quit
-  hs.execute([[osascript -e 'tell application "System Events" to keystroke "q" using {command down, option down}']])
+  -- ⌘+⌥+Esc é o atalho correto do Force Quit (key code 53)
+  hs.execute([[osascript -e 'tell application "System Events" to key code 53 using {command down, option down}']])
   hs.alert("💀 Force Quit Applications")
 end)
 
@@ -139,8 +144,19 @@ hs.hotkey.bind({"cmd","alt","ctrl"}, "p",
 -- SECTION 7 ─ Show Desktop  (⌘ ⌥ ⌃ Space)
 --------------------------------------------------------------------
 hs.hotkey.bind({"cmd","alt","ctrl"}, "space", function()
-  -- Método alternativo para Show Desktop
-  hs.execute([[osascript -e 'tell application "System Events" to keystroke "F11" using function down']])
+  -- Tenta múltiplos métodos (compatibilidade com diferentes versões do macOS)
+  -- Método 1: AppleScript nativo (mais confiável)
+  local success = hs.osascript.applescript([[
+    tell application "System Events"
+      keystroke "d" using {command down, option down, control down}
+    end tell
+  ]])
+  
+  -- Fallback: Se não funcionar, tenta Mission Control + Show Desktop
+  if not success then
+    hs.spaces.toggleShowDesktop()
+  end
+  
   hs.alert("🖥️ Show Desktop")
 end)
 

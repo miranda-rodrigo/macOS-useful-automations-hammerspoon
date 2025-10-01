@@ -43,15 +43,20 @@ local function shortenWithTinyURL(url)
         return string.format("%%%02X", string.byte(c))
     end)
     
-    local cmd = string.format('curl -s "http://tinyurl.com/api-create.php?url=%s"', escapedUrl)
+    -- Usa HTTPS, segue redirects (-L) e timeout de 10s (-m 10)
+    local cmd = string.format('curl -s -L -m 10 "https://tinyurl.com/api-create.php?url=%s"', escapedUrl)
     local handle = io.popen(cmd)
     if not handle then return nil end
     
     local result = handle:read("*a")
     handle:close()
     
-    if result and result ~= "" then
-        return result:gsub("%s+", "") -- trim whitespace
+    if result and result ~= "" and not result:match("Error") then
+        result = result:gsub("%s+", "") -- trim whitespace
+        -- Valida se retornou uma URL válida
+        if result:match("^https?://") then
+            return result
+        end
     end
     return nil
 end

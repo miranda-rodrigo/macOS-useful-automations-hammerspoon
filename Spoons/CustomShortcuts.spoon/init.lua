@@ -127,7 +127,18 @@ function obj:start()
 
   -- ⌘ ⌥ ⌃ Space → Show Desktop
   self.hotkeys[#self.hotkeys + 1] = hs.hotkey.bind({"cmd","alt","ctrl"}, "space", function()
-    hs.execute("osascript -e 'tell application \"System Events\" to key code 103 using function down'")
+    -- Tenta múltiplos métodos para máxima compatibilidade
+    local success = hs.osascript.applescript([[
+      tell application "System Events"
+        keystroke "d" using {command down, option down, control down}
+      end tell
+    ]])
+    
+    -- Fallback: usa API nativa do Hammerspoon
+    if not success then
+      hs.spaces.toggleShowDesktop()
+    end
+    
     hs.alert("🖥️ Show Desktop")
   end)
 

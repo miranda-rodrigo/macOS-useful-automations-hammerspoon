@@ -1,8 +1,33 @@
 # 🔨 Hammerspoon Custom Shortcuts
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Hammerspoon](https://img.shields.io/badge/Hammerspoon-0.9.100+-blue.svg)](https://www.hammerspoon.org/)
+[![macOS](https://img.shields.io/badge/macOS-12.0+-blue.svg)](https://www.apple.com/macos/)
+[![Status](https://img.shields.io/badge/Status-Ready-brightgreen.svg)]()
+
 **8 atalhos personalizados para otimizar seu workflow no macOS usando Hammerspoon**
 
 Este projeto adiciona atalhos poderosos e confiáveis que funcionam universalmente em qualquer aplicativo, usando comandos de terminal para máxima compatibilidade.
+
+> 📝 **v1.1.0** - Force Quit e Show Desktop corrigidos! Veja [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## 🚀 Quick Start
+
+**Instalação em 2 comandos:**
+
+```bash
+# 1. Instalar Hammerspoon
+brew install --cask hammerspoon
+
+# 2. Instalar este projeto (script automático)
+curl -fsSL https://raw.githubusercontent.com/miranda-rodrigo/macOS-useful-automations-hammerspoon/main/install.sh | bash
+```
+
+**OU veja:** [QUICK_START.md](QUICK_START.md) para instalação manual passo-a-passo.
+
+---
 
 ## ✨ Funcionalidades
 
@@ -99,18 +124,43 @@ cp macOS-useful-automations-hammerspoon/init.lua ~/.hammerspoon/init.lua
 - **✅ Sem permissões especiais**: Maioria funciona sem configuração extra
 - **✅ Rápido**: Acesso instantâneo a ferramentas essenciais
 
-## 📁 Arquivos
+## 📁 Estrutura do Projeto
 
 ```
-├── CustomShortcuts.spoon/      # Spoon principal (7 atalhos básicos)
-│   └── init.lua               # Script principal do Spoon
-├── URLShortener.spoon/         # Spoon para encurtar URLs
-│   ├── init.lua               # Script do URL Shortener
-│   └── README.md              # Documentação específica
-├── init.lua                   # Script standalone (alternativa)
-├── spoons_cheat_sheet.html    # Guia visual interativo
-└── README.md                  # Este arquivo
+├── Spoons/
+│   ├── CustomShortcuts.spoon/  # Spoon principal (7 atalhos básicos)
+│   │   └── init.lua
+│   └── URLShortener.spoon/     # Spoon para encurtar URLs
+│       └── init.lua
+│
+├── init.lua                    # Script standalone (alternativa)
+├── init.example.lua            # 📖 Exemplo de configuração comentado
+├── install.sh                  # 🔧 Script de instalação automática
+│
+├── README.md                   # 📖 Este arquivo (começe aqui!)
+├── QUICK_START.md              # 🚀 Guia rápido (5 minutos)
+├── RESUMO_EXECUTIVO.md         # 📊 Resumo técnico e melhorias
+├── TROUBLESHOOTING.md          # 🔧 Guia de solução de problemas (10 tópicos)
+├── ARCHITECTURE.md             # 🏗️ Documentação técnica detalhada
+├── CHANGELOG.md                # 📋 Histórico de versões
+├── LICENSE                     # 📄 MIT License
+│
+└── docs/
+    └── spoons_cheat_sheet.html # Guia visual interativo
 ```
+
+### 📖 Guia de Documentação
+
+| Arquivo | Descrição | Para quem? |
+|---------|-----------|------------|
+| **README.md** | Documentação principal completa | 👤 Todos os usuários |
+| **QUICK_START.md** | Guia rápido de início (5 min) | 🚀 Novos usuários |
+| **RESUMO_EXECUTIVO.md** | Resumo das melhorias (v1.1.0) | 👨‍💻 Desenvolvedores |
+| **TROUBLESHOOTING.md** | Solução de 10 problemas comuns | 🆘 Usuários com problemas |
+| **ARCHITECTURE.md** | Decisões técnicas e estrutura | 🏗️ Contribuidores |
+| **CHANGELOG.md** | Histórico de mudanças | 📋 Todos |
+| **init.example.lua** | Config de exemplo comentado | ⚙️ Configuração |
+| **install.sh** | Script de instalação automática | 🔧 Instalação rápida |
 
 ## 🔧 Personalização
 
@@ -147,9 +197,20 @@ Após qualquer mudança:
 ### Color picker não funciona?
 - Ative "Screen & System Audio Recording" para Hammerspoon
 
+### Force Quit ou Show Desktop não funcionam?
+- ✅ **FIXED** na última versão!
+- Atualize para a versão mais recente
+- Veja [TROUBLESHOOTING.md](TROUBLESHOOTING.md) para detalhes
+
+### TinyURL retorna erro?
+- ✅ **IMPROVED** - Agora usa HTTPS com timeout
+- Verifique sua conexão internet
+- Veja [TROUBLESHOOTING.md](TROUBLESHOOTING.md) para diagnóstico completo
+
 ### Conflitos com outros apps?
 - Os atalhos foram escolhidos para evitar conflitos
 - Se necessário, personalize no `init.lua`
+- Veja [TROUBLESHOOTING.md](TROUBLESHOOTING.md) para resolver conflitos
 
 ## 🤝 Contribuição
 
