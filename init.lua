@@ -1,5 +1,5 @@
 --------------------------------------------------------------------
--- 🔨  Hammerspoon – Atalhos Personalizados (8 atalhos)
+-- 🔨  Hammerspoon – Atalhos Personalizados (9 atalhos)
 --------------------------------------------------------------------
 -- 1. ⌘ I            → Abrir arquivos/URLs/caminhos
 -- 2. ⌘ J            → Mission Control
@@ -9,6 +9,7 @@
 -- 6. ⌘ ⌥ ⌃ P        → Passwords
 -- 7. ⌘ ⌥ ⌃ Space    → Show Desktop
 -- 8. ⌘ ⇧ U / var.   → Encurtador de URLs  (TinyURL / QR / Bit.ly)
+-- 9. ⌘ ⇧ W          → Copiar caminho do Finder
 --------------------------------------------------------------------
 
 --------------------------------------------------------------------
@@ -206,5 +207,34 @@ hs.hotkey.bind({"cmd","shift","ctrl"}, "u", function()
 end)
 
 --------------------------------------------------------------------
-hs.alert("🔨 Atalhos Hammerspoon carregados! (8 ativos)")
+-- SECTION 9 ─ Copiar Caminho do Finder  (⌘ ⇧ W)
+--------------------------------------------------------------------
+hs.hotkey.bind({"cmd","shift"}, "w", function()
+  local script = [[
+    tell application "Finder"
+      set sel to selection
+      if sel is {} then
+        -- Se nada selecionado, pega a pasta atual
+        set currentFolder to target of front window
+        return POSIX path of (currentFolder as alias)
+      else
+        -- Se algo selecionado, pega o primeiro item
+        set theItem to item 1 of sel
+        return POSIX path of (theItem as alias)
+      end if
+    end tell
+  ]]
+  
+  local ok, result = hs.osascript.applescript(script)
+  if ok and result ~= "" then
+    result = result:match("^%s*(.-)%s*$")  -- trim whitespace
+    hs.pasteboard.setContents(result)
+    hs.alert("📋 Caminho copiado!\n" .. result, 3)
+  else
+    hs.alert("⚠️ Erro ao obter caminho do Finder")
+  end
+end)
+
+--------------------------------------------------------------------
+hs.alert("🔨 Atalhos Hammerspoon carregados! (9 ativos)")
 --------------------------------------------------------------------
