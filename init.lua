@@ -1,5 +1,5 @@
 --------------------------------------------------------------------
--- 🔨  Hammerspoon – Atalhos Personalizados (9 atalhos)
+-- 🔨  Hammerspoon – Atalhos Personalizados (10 atalhos)
 --------------------------------------------------------------------
 -- 1. ⌘ I            → Abrir arquivos/URLs/caminhos
 -- 2. ⌘ J            → Mission Control
@@ -10,6 +10,7 @@
 -- 7. ⌘ ⌥ ⌃ Space    → Show Desktop
 -- 8. ⌘ ⇧ U / var.   → Encurtador de URLs  (TinyURL / QR / Bit.ly)
 -- 9. ⌘ ⇧ W          → Copiar caminho do Finder
+-- 10. ⌘ ⌥ ⌃ R       → Text Replacement (Configurações)
 --------------------------------------------------------------------
 
 --------------------------------------------------------------------
@@ -236,5 +237,14 @@ hs.hotkey.bind({"cmd","shift"}, "w", function()
 end)
 
 --------------------------------------------------------------------
-hs.alert("🔨 Atalhos Hammerspoon carregados! (9 ativos)")
+-- SECTION 10 ─ Text Replacement (Configurações)  (⌘ ⌥ ⌃ R)
+--------------------------------------------------------------------
+hs.hotkey.bind({"cmd","alt","ctrl"}, "r", function()
+  -- Abre diretamente o painel Text Replacement nas Configurações do Sistema
+  hs.execute("open 'x-apple.systempreferences:com.apple.preference.keyboard?Text'")
+  hs.alert("⌨️ Text Replacement")
+end)
+
+--------------------------------------------------------------------
+hs.alert("🔨 Atalhos Hammerspoon carregados! (10 ativos)")
 --------------------------------------------------------------------
