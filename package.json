@@ -1,0 +1,98 @@
+{
+  "name": "explorer-tools",
+  "displayName": "Explorer Tools",
+  "description": "Context menu tools for VS Code Explorer: Open in Finder/Explorer/File Manager, Open Dedicated Terminal Here, Open New VS Code Window Here.",
+  "publisher": "your-publisher",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/src/extension.js",
+  "activationEvents": [
+    "onStartupFinished",
+    "onView:explorer",
+    "onCommand:explorerTools.openInFileManager",
+    "onCommand:explorerTools.openInFinder",
+    "onCommand:explorerTools.openInExplorer",
+    "onCommand:explorerTools.openInFileManagerLinux",
+    "onCommand:explorerTools.openDedicatedTerminal",
+    "onCommand:explorerTools.openNewWindowHere"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "explorerTools.openInFileManager",
+        "title": "Open in Finder/Explorer/File Manager",
+        "category": "Explorer Tools"
+      },
+      {
+        "command": "explorerTools.openInFinder",
+        "title": "Open in Finder",
+        "category": "Explorer Tools"
+      },
+      {
+        "command": "explorerTools.openInExplorer",
+        "title": "Open in Explorer",
+        "category": "Explorer Tools"
+      },
+      {
+        "command": "explorerTools.openInFileManagerLinux",
+        "title": "Open in File Manager",
+        "category": "Explorer Tools"
+      },
+      {
+        "command": "explorerTools.openDedicatedTerminal",
+        "title": "Open Dedicated Terminal Here",
+        "category": "Explorer Tools"
+      },
+      {
+        "command": "explorerTools.openNewWindowHere",
+        "title": "Open New VS Code Window Here",
+        "category": "Explorer Tools"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        { "command": "explorerTools.openInFinder", "when": "isMac && (explorerResourceIsFolder || explorerResourceIsFile)", "group": "navigation@7" },
+        { "command": "explorerTools.openInExplorer", "when": "isWindows && (explorerResourceIsFolder || explorerResourceIsFile)", "group": "navigation@7" },
+        { "command": "explorerTools.openInFileManagerLinux", "when": "isLinux && (explorerResourceIsFolder || explorerResourceIsFile)", "group": "navigation@7" },
+        {
+          "command": "explorerTools.openDedicatedTerminal",
+          "when": "explorerResourceIsFolder || explorerResourceIsFile",
+          "group": "navigation@8"
+        },
+        {
+          "command": "explorerTools.openNewWindowHere",
+          "when": "explorerResourceIsFolder || explorerResourceIsFile",
+          "group": "navigation@9"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "lint": "eslint --ext .ts src test",
+    "test": "npm run compile && node ./out/test/runTest.js",
+    "package": "vsce package",
+    "prepublishOnly": "npm run lint && npm test"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.7.5",
+    "@types/vscode": "^1.90.0",
+    "@typescript-eslint/eslint-plugin": "^7.16.1",
+    "@typescript-eslint/parser": "^7.16.1",
+    "chai": "^4.5.0",
+    "eslint": "^9.11.1",
+    "mocha": "^10.7.3",
+    "typescript": "^5.6.2",
+    "vsce": "^2.15.0",
+    "vscode-test": "^1.7.0"
+  }
+}
+
