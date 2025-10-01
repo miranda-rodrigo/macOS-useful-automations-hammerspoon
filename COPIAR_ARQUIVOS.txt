@@ -1,0 +1,36 @@
+=================================================================
+COMANDOS PARA COPIAR OS ARQUIVOS - COPIE E COLE NO TERMINAL
+=================================================================
+
+# 1. CRIAR DIRETÓRIO DE DESTINO
+mkdir -p /Users/rodrigomiranda/useful-repos/cursor-vscode-utils
+
+# 2. IR PARA O DIRETÓRIO DE DESTINO
+cd /Users/rodrigomiranda/useful-repos/cursor-vscode-utils
+
+# 3. COPIAR TODOS OS ARQUIVOS (UM COMANDO ÚNICO)
+cp -r /workspace/src /workspace/.vscode /workspace/media /workspace/package.json /workspace/tsconfig.json /workspace/.eslintrc.json /workspace/.gitignore /workspace/.vscodeignore /workspace/.editorconfig /workspace/.npmrc /workspace/README.md /workspace/QUICK_START.md /workspace/DEVELOPMENT.md /workspace/INSTALL.md /workspace/CHANGELOG.md /workspace/LICENSE /workspace/REPOSITORY_SUMMARY.md /workspace/FILE_INDEX.md /workspace/PROJECT_STRUCTURE.txt /workspace/EXECUTIVE_SUMMARY.md /workspace/INDEX.md /workspace/LEIA-ME.md .
+
+# 4. VERIFICAR QUE TUDO FOI COPIADO
+ls -la
+
+# 5. INSTALAR DEPENDÊNCIAS
+npm install
+
+# 6. COMPILAR TYPESCRIPT
+npm run compile
+
+# 7. ABRIR NO VS CODE
+code .
+
+=================================================================
+PRONTO! Agora é só pressionar F5 no VS Code para testar!
+=================================================================
+
+
+===== OU USE ESTE COMANDO MAIS SIMPLES (RECOMENDADO) =====
+
+# Copiar tudo de uma vez (execute este único comando):
+mkdir -p /Users/rodrigomiranda/useful-repos/cursor-vscode-utils && cd /workspace && cp -r src .vscode media *.json *.md LICENSE .eslintrc.json .gitignore .vscodeignore .editorconfig .npmrc *.txt /Users/rodrigomiranda/useful-repos/cursor-vscode-utils/ && cd /Users/rodrigomiranda/useful-repos/cursor-vscode-utils && ls -la
+
+=================================================================
