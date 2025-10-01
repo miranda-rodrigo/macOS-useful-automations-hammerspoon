@@ -1,6 +1,6 @@
 # 🔨 Hammerspoon Custom Shortcuts
 
-**7 atalhos personalizados para otimizar seu workflow no macOS usando Hammerspoon**
+**8 atalhos personalizados para otimizar seu workflow no macOS usando Hammerspoon**
 
 Este projeto adiciona atalhos poderosos e confiáveis que funcionam universalmente em qualquer aplicativo, usando comandos de terminal para máxima compatibilidade.
 
@@ -15,6 +15,7 @@ Este projeto adiciona atalhos poderosos e confiáveis que funcionam universalmen
 | `⌘ ⌥ ⌃ A` | **Activity Monitor** | Abre monitor de processos e performance |
 | `⌘ ⌥ ⌃ P` | **Passwords** | Abre gerenciador de senhas nativo |
 | `⌘ ⌥ ⌃ Space` | **Show Desktop** | Esconde/mostra todas as janelas |
+| `⌘ ⇧ U` | **URL Shortener** | Encurta URLs usando TinyURL/Bit.ly (Spoon separado) |
 
 ## 🚀 Instalação
 
@@ -31,12 +32,18 @@ brew install --cask hammerspoon
 # Clone este repositório
 git clone https://github.com/miranda-rodrigo/macOS-useful-automations-hammerspoon.git
 
-# Instale o Spoon
+# Instale os Spoons
 cp -r macOS-useful-automations-hammerspoon/CustomShortcuts.spoon ~/.hammerspoon/Spoons/
+cp -r macOS-useful-automations-hammerspoon/URLShortener.spoon ~/.hammerspoon/Spoons/
 
 # Adicione ao seu ~/.hammerspoon/init.lua:
 hs.loadSpoon("CustomShortcuts")
 spoon.CustomShortcuts:start()
+
+# Para usar o URL Shortener (opcional):
+hs.loadSpoon("URLShortener")
+spoon.URLShortener:start()
+-- spoon.URLShortener:setBitlyToken("seu_token_bitly") -- Opcional
 ```
 
 ### 2. Opção B: Usar como script direto
@@ -79,6 +86,9 @@ cp macOS-useful-automations-hammerspoon/init.lua ~/.hammerspoon/init.lua
 ⌘ ⌥ ⌃ Q           → Force Quit Applications  
 ⌘ ⌥ ⌃ A           → Activity Monitor
 ⌘ ⌥ ⌃ P           → Passwords App
+⌘ ⇧ U             → URL Shortener (TinyURL)
+⌘ ⇧ ⌥ U           → URL Shortener + QR Code
+⌘ ⇧ ⌃ U           → URL Shortener (Bit.ly)
 ```
 
 ## 🎯 Vantagens
@@ -92,10 +102,13 @@ cp macOS-useful-automations-hammerspoon/init.lua ~/.hammerspoon/init.lua
 ## 📁 Arquivos
 
 ```
-├── CustomShortcuts.spoon/      # Spoon (extensão padrão do Hammerspoon)
+├── CustomShortcuts.spoon/      # Spoon principal (7 atalhos básicos)
 │   └── init.lua               # Script principal do Spoon
+├── URLShortener.spoon/         # Spoon para encurtar URLs
+│   ├── init.lua               # Script do URL Shortener
+│   └── README.md              # Documentação específica
 ├── init.lua                   # Script standalone (alternativa)
-├── hammerspoon-shortcuts.html # Guia visual interativo
+├── spoons_cheat_sheet.html    # Guia visual interativo
 └── README.md                  # Este arquivo
 ```
 
