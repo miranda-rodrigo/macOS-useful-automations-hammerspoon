@@ -43,7 +43,7 @@ local function shortenWithTinyURL(url)
         return string.format("%%%02X", string.byte(c))
     end)
     
-    local cmd = string.format('curl -s "http://tinyurl.com/api-create.php?url=%s"', escapedUrl)
+    local cmd = string.format('curl -s "https://tinyurl.com/api-create.php?url=%s"', escapedUrl)
     local handle = io.popen(cmd)
     if not handle then return nil end
     

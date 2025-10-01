@@ -127,7 +127,22 @@ function obj:start()
 
   -- ⌘ ⌥ ⌃ Space → Show Desktop
   self.hotkeys[#self.hotkeys + 1] = hs.hotkey.bind({"cmd","alt","ctrl"}, "space", function()
-    hs.execute("osascript -e 'tell application \"System Events\" to key code 103 using function down'")
+    local function tryF11()
+      hs.eventtap.keyStroke({}, "F11", 0)
+      hs.timer.doAfter(0.12, function() hs.eventtap.keyStroke({"fn"}, "F11", 0) end)
+    end
+    local function hideOthers()
+      local front = hs.application.frontmostApplication()
+      if front then
+        front:hideOthers()
+      else
+        for _, app in ipairs(hs.application.runningApplications()) do
+          if app:bundleID() ~= "com.apple.finder" then app:hide() end
+        end
+      end
+    end
+    pcall(tryF11)
+    hs.timer.doAfter(0.25, function() hideOthers() end)
     hs.alert("🖥️ Show Desktop")
   end)
 
