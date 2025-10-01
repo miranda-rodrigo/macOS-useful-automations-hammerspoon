@@ -1,0 +1,89 @@
+{
+  "name": "explorer-tools",
+  "displayName": "Explorer Tools",
+  "description": "Add powerful context menu actions to VS Code Explorer: Open in file manager, dedicated terminal, and new window",
+  "version": "0.0.1",
+  "publisher": "your-publisher-name",
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "explorer",
+    "context menu",
+    "terminal",
+    "file manager",
+    "finder"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "explorerTools.openInFileManager",
+        "title": "Open in File Manager"
+      },
+      {
+        "command": "explorerTools.openDedicatedTerminal",
+        "title": "Open Dedicated Terminal Here"
+      },
+      {
+        "command": "explorerTools.openNewWindowHere",
+        "title": "Open New VS Code Window Here"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "explorerTools.openInFileManager",
+          "when": "resourceUri",
+          "group": "navigation@100"
+        },
+        {
+          "command": "explorerTools.openDedicatedTerminal",
+          "when": "resourceUri",
+          "group": "navigation@101"
+        },
+        {
+          "command": "explorerTools.openNewWindowHere",
+          "when": "resourceUri",
+          "group": "navigation@102"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "prepublishOnly": "npm run test"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.90.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/test-electron": "^2.3.9",
+    "@vscode/vsce": "^2.24.0",
+    "eslint": "^8.56.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.3.0",
+    "typescript": "^5.3.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/explorer-tools"
+  },
+  "license": "MIT"
+}

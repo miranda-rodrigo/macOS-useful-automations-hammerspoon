@@ -1,0 +1,38 @@
+# Files to exclude from the extension package
+
+# Source files
+src/**
+.vscode/**
+.vscode-test/**
+
+# Build files
+**/*.ts
+**/*.map
+.gitignore
+.gitattributes
+
+# Testing
+test/**
+**/test/**
+**/.eslintrc.json
+
+# Documentation (included)
+# README.md (keep)
+# CHANGELOG.md (keep)
+# LICENSE (keep)
+
+# Development
+tsconfig.json
+.eslintrc.json
+**/*.test.*
+**/**.test.*
+
+# Node
+node_modules/**
+.npm
+.npmrc
+
+# Misc
+.DS_Store
+*.vsix
+*.log

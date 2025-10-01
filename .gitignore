@@ -1,7 +1,26 @@
-# macOS
+# Build output
+out/
+dist/
+*.vsix
+
+# Node modules
+node_modules/
+
+# IDE
+.vscode-test/
+*.log
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Hammerspoon temp
-*.log
+# TypeScript
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
 *.tmp
+*.temp
