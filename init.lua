@@ -1,0 +1,195 @@
+--------------------------------------------------------------------
+-- 🔨  Hammerspoon – Atalhos Personalizados (8 atalhos)
+--------------------------------------------------------------------
+-- 1. ⌘ I            → Abrir arquivos/URLs/caminhos
+-- 2. ⌘ J            → Mission Control
+-- 3. ⌘ ⌥ ⌃ T        → Digital Color Meter
+-- 4. ⌘ ⌥ ⌃ Q        → Force Quit
+-- 5. ⌘ ⌥ ⌃ A        → Activity Monitor
+-- 6. ⌘ ⌥ ⌃ P        → Passwords
+-- 7. ⌘ ⌥ ⌃ Space    → Show Desktop
+-- 8. ⌘ ⇧ U / var.   → Encurtador de URLs  (TinyURL / QR / Bit.ly)
+--------------------------------------------------------------------
+
+--------------------------------------------------------------------
+-- Helper: diretório-pai de um caminho
+--------------------------------------------------------------------
+local function parent_dir(p)
+  p = p:gsub("/+$", "")
+  return p:match("(.+)/[^/]+$") or p
+end
+
+--------------------------------------------------------------------
+-- Helper: valida URL simples
+--------------------------------------------------------------------
+local function is_url(u) return u and u:match("^https?://") end
+
+--------------------------------------------------------------------
+-- Helper: TinyURL (usando curl - mais confiável)
+--------------------------------------------------------------------
+local function shorten_tiny(url)
+  local escapedUrl = url:gsub("([^%w%.%-%_])", function(c)
+    return string.format("%%%02X", string.byte(c))
+  end)
+  
+  local cmd = string.format('curl -s "http://tinyurl.com/api-create.php?url=%s"', escapedUrl)
+  local handle = io.popen(cmd)
+  if not handle then return nil end
+  
+  local result = handle:read("*a")
+  handle:close()
+  
+  if result and result ~= "" then
+    return result:gsub("%s+", "") -- trim whitespace
+  end
+  return nil
+end
+
+--------------------------------------------------------------------
+-- Helper: Bit.ly  (adicione seu token se quiser)
+--------------------------------------------------------------------
+local BITLY_TOKEN = nil   -- coloque aqui se tiver → "xxxxxxxxxxxxxxxxxxxx"
+local function shorten_bitly(url)
+  if not BITLY_TOKEN then return nil,"token ausente" end
+  local body = string.format('{"long_url":"%s"}', url)
+  local hdrs = {
+    ["Authorization"] = "Bearer " .. BITLY_TOKEN,
+    ["Content-Type"]  = "application/json"
+  }
+  local ok, res = hs.http.doRequest(
+        "https://api-ssl.bitly.com/v4/shorten", "POST", body, hdrs)
+  local link = res and res:match('%"link"%s*:%s*%"([^"]+)"')
+  return ok and link or nil
+end
+
+--------------------------------------------------------------------
+-- Helper: gera QR-Code no navegador
+--------------------------------------------------------------------
+local function open_qr(url)
+  local escapedUrl = url:gsub("([^%w%.%-%_])", function(c)
+    return string.format("%%%02X", string.byte(c))
+  end)
+  local qrUrl = string.format("https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=%s", escapedUrl)
+  hs.execute(string.format('open "%s"', qrUrl))
+end
+
+--------------------------------------------------------------------
+-- SECTION 1 ─ Abrir arquivos / URLs  (⌘ I)
+--------------------------------------------------------------------
+hs.hotkey.bind({"cmd"}, "i", function()
+  hs.eventtap.keyStroke({"cmd"}, "c")
+  hs.timer.doAfter(0.3, function()
+    local sel = hs.pasteboard.getContents()
+    if sel and sel~="" then
+      sel = sel:match("^%s*(.-)%s*$"):gsub("^file://","")
+      if hs.fs.attributes(sel) then           -- caminho válido
+        if hs.fs.attributes(sel).mode~="directory" then sel = parent_dir(sel) end
+        hs.execute('open "'..sel..'"'); hs.alert("📂 "..sel); return
+      end
+      if is_url(sel) or sel:match("^www%.") then
+        hs.execute('open "'..sel..'"'); hs.alert("🌐 "..sel); return
+      end
+    end
+    local script=[[
+      tell application "Finder"
+        if (count of selection)=0 then return ""
+        POSIX path of (item 1 of selection as alias)
+      end tell]]
+    local ok,res=hs.osascript.applescript(script)
+    if ok and res~="" then hs.execute('open "'..res..'"')
+    else hs.alert("⚠️ Nada selecionado") end
+  end)
+end)
+
+--------------------------------------------------------------------
+-- SECTION 2 ─ Mission Control  (⌘ J)
+--------------------------------------------------------------------
+hs.hotkey.bind({"cmd"}, "j",
+  function() hs.execute("open -b com.apple.exposelauncher"); hs.alert("📱 Mission Control") end)
+
+--------------------------------------------------------------------
+-- SECTION 3 ─ Digital Color Meter  (⌘ ⌥ ⌃ T)
+--------------------------------------------------------------------
+hs.hotkey.bind({"cmd","alt","ctrl"}, "t",
+  function() hs.execute([[osascript -e 'tell application "Digital Color Meter" to activate']])
+           hs.alert("🎨 Digital Color Meter") end)
+
+--------------------------------------------------------------------
+-- SECTION 4 ─ Force Quit  (⌘ ⌥ ⌃ Q)
+--------------------------------------------------------------------
+hs.hotkey.bind({"cmd","alt","ctrl"}, "q", function()
+  -- Método mais confiável para Force Quit
+  hs.execute([[osascript -e 'tell application "System Events" to keystroke "q" using {command down, option down}']])
+  hs.alert("💀 Force Quit Applications")
+end)
+
+--------------------------------------------------------------------
+-- SECTION 5 ─ Activity Monitor  (⌘ ⌥ ⌃ A)
+--------------------------------------------------------------------
+hs.hotkey.bind({"cmd","alt","ctrl"}, "a",
+  function() hs.execute("open -a 'Activity Monitor'"); hs.alert("📊 Activity Monitor") end)
+
+--------------------------------------------------------------------
+-- SECTION 6 ─ Passwords  (⌘ ⌥ ⌃ P)
+--------------------------------------------------------------------
+hs.hotkey.bind({"cmd","alt","ctrl"}, "p",
+  function() hs.execute("open -a 'Passwords'"); hs.alert("🔐 Passwords") end)
+
+--------------------------------------------------------------------
+-- SECTION 7 ─ Show Desktop  (⌘ ⌥ ⌃ Space)
+--------------------------------------------------------------------
+hs.hotkey.bind({"cmd","alt","ctrl"}, "space", function()
+  -- Método alternativo para Show Desktop
+  hs.execute([[osascript -e 'tell application "System Events" to keystroke "F11" using function down']])
+  hs.alert("🖥️ Show Desktop")
+end)
+
+--------------------------------------------------------------------
+-- SECTION 8 ─ URL Shortener  (⌘ ⇧ U  / var.)
+--------------------------------------------------------------------
+-- ⌘ ⇧ U  → TinyURL
+hs.hotkey.bind({"cmd","shift"}, "u", function()
+  hs.eventtap.keyStroke({"cmd"}, "c")
+  hs.timer.doAfter(0.3, function()
+    local url = hs.pasteboard.getContents()
+    if not is_url(url) then return hs.alert("⚠️ Selecione URL válida") end
+    hs.alert("🔄 Encurtando…")
+    local s = shorten_tiny(url)
+    if s then hs.pasteboard.setContents(s); hs.alert("🔗 Copiado!\n"..s,3)
+    else     hs.alert("❌ TinyURL falhou") end
+  end)
+end)
+
+-- ⌘ ⇧ ⌥ U  → TinyURL + QR
+hs.hotkey.bind({"cmd","shift","alt"}, "u", function()
+  hs.eventtap.keyStroke({"cmd"}, "c")
+  hs.timer.doAfter(0.3, function()
+    local url = hs.pasteboard.getContents()
+    if not is_url(url) then return hs.alert("⚠️ Selecione URL válida") end
+    hs.alert("🔄 Encurtando…")
+    local s = shorten_tiny(url)
+    if s then
+      hs.pasteboard.setContents(s)
+      hs.alert("🔗 Copiado!\n"..s,3)
+      hs.timer.doAfter(1, function() open_qr(s) end)
+    else hs.alert("❌ TinyURL falhou") end
+  end)
+end)
+
+-- ⌘ ⇧ ⌃ U  → Bit.ly
+hs.hotkey.bind({"cmd","shift","ctrl"}, "u", function()
+  if not BITLY_TOKEN then return hs.alert("⚠️ Configure BITLY_TOKEN") end
+  hs.eventtap.keyStroke({"cmd"}, "c")
+  hs.timer.doAfter(0.3, function()
+    local url = hs.pasteboard.getContents()
+    if not is_url(url) then return hs.alert("⚠️ Selecione URL válida") end
+    hs.alert("🔄 Encurtando (Bit.ly)…")
+    local s,err = shorten_bitly(url)
+    if s then hs.pasteboard.setContents(s); hs.alert("🔗 Copiado!\n"..s,3)
+    else     hs.alert("❌ Bit.ly erro: "..(err or "?")) end
+  end)
+end)
+
+--------------------------------------------------------------------
+hs.alert("🔨 Atalhos Hammerspoon carregados! (8 ativos)")
+--------------------------------------------------------------------
