@@ -32,7 +32,7 @@ local function shorten_tiny(url)
     return string.format("%%%02X", string.byte(c))
   end)
   
-  local cmd = string.format('curl -s "http://tinyurl.com/api-create.php?url=%s"', escapedUrl)
+  local cmd = string.format('curl -s "https://tinyurl.com/api-create.php?url=%s"', escapedUrl)
   local handle = io.popen(cmd)
   if not handle then return nil end
   
@@ -119,7 +119,7 @@ hs.hotkey.bind({"cmd","alt","ctrl"}, "t",
 --------------------------------------------------------------------
 hs.hotkey.bind({"cmd","alt","ctrl"}, "q", function()
   -- Método mais confiável para Force Quit
-  hs.execute([[osascript -e 'tell application "System Events" to keystroke "q" using {command down, option down}']])
+  hs.execute([[osascript -e 'tell application "System Events" to key code 53 using {command down, option down}']])
   hs.alert("💀 Force Quit Applications")
 end)
 
@@ -139,8 +139,23 @@ hs.hotkey.bind({"cmd","alt","ctrl"}, "p",
 -- SECTION 7 ─ Show Desktop  (⌘ ⌥ ⌃ Space)
 --------------------------------------------------------------------
 hs.hotkey.bind({"cmd","alt","ctrl"}, "space", function()
-  -- Método alternativo para Show Desktop
-  hs.execute([[osascript -e 'tell application "System Events" to keystroke "F11" using function down']])
+  -- Tenta F11 e depois fn+F11; em seguida, fallback para ocultar outros apps
+  local function tryF11()
+    hs.eventtap.keyStroke({}, "F11", 0)
+    hs.timer.doAfter(0.12, function() hs.eventtap.keyStroke({"fn"}, "F11", 0) end)
+  end
+  local function hideOthers()
+    local front = hs.application.frontmostApplication()
+    if front then
+      front:hideOthers()
+    else
+      for _, app in ipairs(hs.application.runningApplications()) do
+        if app:bundleID() ~= "com.apple.finder" then app:hide() end
+      end
+    end
+  end
+  pcall(tryF11)
+  hs.timer.doAfter(0.25, function() hideOthers() end)
   hs.alert("🖥️ Show Desktop")
 end)
 
