@@ -11,11 +11,11 @@ Este projeto adiciona atalhos poderosos e confiáveis que funcionam universalmen
 | `⌘ I` | **Abrir Arquivos/URLs** | Abre URLs, caminhos de arquivo ou itens selecionados no Finder |
 | `⌘ J` | **Mission Control** | Mostra todos os Desktops e janelas abertas |
 | `⌘ ⌥ ⌃ T` | **Color Picker** | Abre Digital Color Meter nativo (⌘+L para copiar) |
-| `⌘ ⌥ ⌃ Q` | **Force Quit** | Abre janela Force Quit Applications |
+| `⌘ ⌥ ⌃ Q` | **Force Quit** | Abre janela Force Quit (cmd+opt+Esc) |
 | `⌘ ⌥ ⌃ A` | **Activity Monitor** | Abre monitor de processos e performance |
 | `⌘ ⌥ ⌃ P` | **Passwords** | Abre gerenciador de senhas nativo |
-| `⌘ ⌥ ⌃ Space` | **Show Desktop** | Esconde/mostra todas as janelas |
-| `⌘ ⇧ U` | **URL Shortener** | Encurta URLs usando TinyURL/Bit.ly (Spoon separado) |
+| `⌘ ⌥ ⌃ Space` | **Show Desktop** | Tenta F11; fallback oculta outros apps |
+| `⌘ ⇧ U` | **URL Shortener** | Encurta URLs (TinyURL via HTTPS); Bit.ly opcional |
 
 ## 🚀 Instalação
 
@@ -61,7 +61,7 @@ cp macOS-useful-automations-hammerspoon/init.lua ~/.hammerspoon/init.lua
 ### 4. Configurar permissões (se necessário)
 - **System Settings** → **Privacy & Security**
 - **Accessibility** → Ative "Hammerspoon"
-- **Screen & System Audio Recording** → Ative "Hammerspoon" (para color picker)
+- **Screen Recording** → Ative "Hammerspoon" (para color picker)
 
 ## 📖 Como Usar
 
@@ -77,7 +77,7 @@ cp macOS-useful-automations-hammerspoon/init.lua ~/.hammerspoon/init.lua
 ### 🖥️ Controle de Janelas
 ```
 ⌘ J                → Mission Control (todos os desktops)
-⌘ ⌥ ⌃ Space       → Show Desktop (esconder/mostrar janelas)
+⌘ ⌥ ⌃ Space       → Show Desktop (tenta F11, fallback para ocultar outros)
 ```
 
 ### 🛠️ Ferramentas do Sistema
@@ -86,7 +86,7 @@ cp macOS-useful-automations-hammerspoon/init.lua ~/.hammerspoon/init.lua
 ⌘ ⌥ ⌃ Q           → Force Quit Applications  
 ⌘ ⌥ ⌃ A           → Activity Monitor
 ⌘ ⌥ ⌃ P           → Passwords App
-⌘ ⇧ U             → URL Shortener (TinyURL)
+⌘ ⇧ U             → URL Shortener (TinyURL via HTTPS)
 ⌘ ⇧ ⌥ U           → URL Shortener + QR Code
 ⌘ ⇧ ⌃ U           → URL Shortener (Bit.ly)
 ```
@@ -108,7 +108,7 @@ cp macOS-useful-automations-hammerspoon/init.lua ~/.hammerspoon/init.lua
 │   ├── init.lua               # Script do URL Shortener
 │   └── README.md              # Documentação específica
 ├── init.lua                   # Script standalone (alternativa)
-├── spoons_cheat_sheet.html    # Guia visual interativo
+├── docs/CHEATSHEET.md         # Cheat sheet com atalhos e exemplos
 └── README.md                  # Este arquivo
 ```
 
@@ -169,4 +169,4 @@ Criado com ❤️ para otimizar o workflow no macOS usando [Hammerspoon](https:/
 
 ---
 
-**💡 Dica:** Abra o arquivo `hammerspoon-shortcuts.html` no navegador para um guia visual interativo com exemplos práticos!
+**📘 Cheat Sheet:** Veja `docs/CHEATSHEET.md` para uma visão rápida dos atalhos com exemplos.
