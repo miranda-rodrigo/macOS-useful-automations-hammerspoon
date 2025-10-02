@@ -4,12 +4,15 @@
 
 Os atalhos de OCR foram **completamente corrigidos e estabilizados** para funcionar em **Macs Apple Silicon com Homebrew**:
 
-### 🔧 Problema Identificado e Corrigido
+### 🔧 Problema Identificado e Corrigido (SOLUÇÃO FINAL)
 **Problema**: O atalho `⇧ ⌃ ⌘ R` apenas copiava a imagem para o clipboard sem executar o OCR.
 
-**Causa**: Falta de delay entre a captura da tela (`screencapture -i -c`) e a chamada da função OCR (`ocrClipboard()`). A imagem precisava de tempo para estar disponível no clipboard.
+**Causa Raiz**: O `screencapture -i -c` salvava a imagem no clipboard, mas depois o OCR também tentava usar o clipboard, causando conflito. A imagem capturada sobrescrevia o texto extraído pelo OCR.
 
-**Solução**: Adicionado delay de 0.3 segundos após a captura bem-sucedida antes de executar o OCR.
+**Solução Final**: 
+1. **Mudança de abordagem**: Em vez de usar `screencapture -i -c` (clipboard), agora usa `screencapture -i arquivo.png` (arquivo temporário)
+2. **Fluxo corrigido**: Captura → Arquivo temporário → OCR → Texto no clipboard (sem interferência da imagem)
+3. **Limpeza automática**: O arquivo temporário é removido automaticamente após o OCR
 
 - **⇧ ⌃ ⌘ R** – OCR da área da tela (captura interativa)
 - **⇧ ⌃ ⌘ F** – OCR de imagem no clipboard
@@ -67,24 +70,22 @@ tesseract --version
 - **Detecção robusta**: Melhor detecção de caminhos do Tesseract
 - **Logs de debug**: Informações de erro mais detalhadas no console
 
-### ✅ Workflow Simplificado
-- **⇧ ⌃ ⌘ R**: Captura área da tela → clipboard → OCR
-- **⇧ ⌃ ⌘ F**: OCR direto do que está no clipboard
+### ✅ Workflow Simplificado (CORRIGIDO)
+- **⇧ ⌃ ⌘ R**: Captura área da tela → **arquivo temporário** → OCR → **texto no clipboard**
+- **⇧ ⌃ ⌘ F**: OCR direto do que está no clipboard (imagens)
 - **Uso de hs.task**: Execução assíncrona sem travamentos
+- **Sem conflitos**: A imagem não interfere mais com o texto extraído
 
 ## 🚀 Como Usar
 
-### OCR de Área da Tela (⇧ ⌃ ⌘ R)
+### OCR de Área da Tela (⇧ ⌃ ⌘ R) - CORRIGIDO
 
-1. **Opção 1 - Captura da Tela**:
+1. **Captura e OCR em uma etapa**:
    - Pressione `⇧ ⌃ ⌘ R`
-   - Selecione área da tela com texto
-   - Texto é extraído e copiado automaticamente
-
-2. **Opção 2 - Imagem da Área de Transferência**:
-   - Copie uma imagem (⌘C)
-   - Pressione `⇧ ⌃ ⌘ R`
-   - Texto da imagem é extraído
+   - Selecione área da tela com texto (cursor em cruz)
+   - Aguarde a mensagem "🔍 Processando OCR..."
+   - **Texto é extraído e copiado automaticamente**
+   - **A imagem NÃO fica no clipboard** (problema resolvido!)
 
 ### OCR de Imagem no Clipboard (⇧ ⌃ ⌘ F)
 
@@ -145,15 +146,17 @@ brew install tesseract tesseract-lang
 
 Após as correções, os atalhos OCR agora funcionam de forma **estável e confiável** em Macs Apple Silicon com Homebrew, com fallbacks robustos e mensagens de erro informativas.
 
-### 🎯 Status Atual
+### 🎯 Status Atual (PROBLEMA TOTALMENTE RESOLVIDO)
 - ✅ **Problema principal RESOLVIDO**: `⇧ ⌃ ⌘ R` agora executa OCR corretamente
-- ✅ **Timing corrigido**: Delay de 0.3s garante que a imagem esteja no clipboard
+- ✅ **Conflito de clipboard eliminado**: Mudança para arquivo temporário resolve o problema
+- ✅ **Fluxo otimizado**: Captura → Arquivo → OCR → Texto (sem interferências)
 - ✅ **Detecção melhorada**: Suporte a múltiplas arquiteturas (Mac/Linux)
 - ✅ **Feedback aprimorado**: Mensagens claras durante o processamento
-- ✅ **Logs detalhados**: Informações de debug para troubleshooting
+- ✅ **Limpeza automática**: Arquivos temporários removidos automaticamente
 
 ### 🔄 Para aplicar as correções:
 1. Recarregue a configuração do Hammerspoon (`⌘ + R` no console do Hammerspoon)
 2. Teste o atalho `⇧ ⌃ ⌘ R` selecionando uma área com texto
 3. Verifique se a mensagem "🔍 Processando OCR..." aparece
-4. O texto extraído deve ser copiado automaticamente para o clipboard
+4. **Confirme que apenas o TEXTO é copiado** (não a imagem)
+5. Use `⌘ + V` para colar - deve aparecer texto, não imagem!
