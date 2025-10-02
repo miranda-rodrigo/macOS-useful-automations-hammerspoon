@@ -245,7 +245,7 @@
     <div class="container">
         <div class="header">
             <h1>🔨 Hammerspoon Atalhos</h1>
-            <p>10 atalhos personalizados para otimizar seu workflow no macOS</p>
+            <p>12 atalhos personalizados para otimizar seu workflow no macOS</p>
             <p style="margin-top: 15px; opacity: 0.8;">
                 <a href="https://github.com/miranda-rodrigo/macOS-useful-automations-hammerspoon" 
                    target="_blank" 
@@ -440,6 +440,58 @@
                 </div>
             </div>
 
+            <!-- OCR (Reconhecimento de Texto) -->
+            <div class="section">
+                <h2>🔍 OCR - Reconhecimento de Texto</h2>
+                <div class="shortcuts-grid">
+                    <div class="shortcut-card">
+                        <div class="shortcut-header">
+                            <span class="shortcut-icon">🔍</span>
+                            <span class="shortcut-title">OCR de Área da Tela</span>
+                            <span class="status-badge status-working">✅ Funciona</span>
+                        </div>
+                        <div class="shortcut-keys">⇧ ⌃ ⌘ R</div>
+                        <div class="shortcut-description">
+                            Captura uma área selecionada da tela e extrai todo o texto visível usando OCR. Perfeito para PDFs escaneados, imagens com texto, vídeos pausados ou qualquer conteúdo não-selecionável.
+                        </div>
+                        <div class="shortcut-example">
+                            <strong>Como usar:</strong><br>
+                            1. Pressione ⇧⌃⌘R<br>
+                            2. Selecione área da tela com texto<br>
+                            3. Texto é copiado automaticamente<br>
+                            <strong>Requer:</strong> Permissões de Gravação de Tela
+                        </div>
+                    </div>
+
+                    <div class="shortcut-card">
+                        <div class="shortcut-header">
+                            <span class="shortcut-icon">📁</span>
+                            <span class="shortcut-title">OCR de Arquivo</span>
+                            <span class="status-badge status-working">✅ Funciona</span>
+                        </div>
+                        <div class="shortcut-keys">⇧ ⌃ ⌘ F</div>
+                        <div class="shortcut-description">
+                            Extrai texto de uma imagem selecionada no Finder. Suporta PNG, JPG, GIF, TIFF e outros formatos. Ideal para screenshots salvos ou fotos com texto.
+                        </div>
+                        <div class="shortcut-example">
+                            <strong>Como usar:</strong><br>
+                            1. Selecione imagem no Finder<br>
+                            2. Pressione ⇧⌃⌘F<br>
+                            3. Texto é extraído e copiado<br>
+                            <strong>Tecnologia:</strong> Tesseract + Vision API
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-left: 4px solid #3498db; border-radius: 5px;">
+                    <h4 style="color: #2980b9; margin-bottom: 10px;">🛠️ Configuração OCR</h4>
+                    <p><strong>Dependências:</strong> Tesseract instalado via Homebrew</p>
+                    <code style="background: rgba(0,0,0,0.1); padding: 5px; border-radius: 3px;">brew install tesseract tesseract-lang</code>
+                    <p style="margin-top: 10px;"><strong>Permissões:</strong> Configurações → Privacidade → Gravação de Tela → Adicionar Hammerspoon</p>
+                    <p><strong>Idiomas:</strong> Português + Inglês (configurável)</p>
+                </div>
+            </div>
+
             <!-- Controle de Interface -->
             <div class="section">
                 <h2>🖥️ Controle de Interface</h2>
@@ -538,7 +590,7 @@
                     <li><strong>Copie o arquivo:</strong> <code>cp init.lua ~/.hammerspoon/init.lua</code></li>
                     <li><strong>Recarregue a configuração:</strong> Abra o Hammerspoon e clique em "Reload Config"</li>
                     <li><strong>Configure permissões:</strong> Vá em Configurações → Privacidade e Segurança → Acessibilidade e adicione o Hammerspoon</li>
-                    <li><strong>Teste os 10 atalhos!</strong> 🎉</li>
+                    <li><strong>Teste os 12 atalhos!</strong> 🎉</li>
                 </ol>
                 
                 <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.2); border-radius: 8px;">
