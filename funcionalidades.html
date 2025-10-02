@@ -245,7 +245,7 @@
     <div class="container">
         <div class="header">
             <h1>🔨 Hammerspoon Atalhos</h1>
-            <p>12 atalhos personalizados para otimizar seu workflow no macOS</p>
+            <p>13 atalhos personalizados para otimizar seu workflow no macOS</p>
             <p style="margin-top: 15px; opacity: 0.8;">
                 <a href="https://github.com/miranda-rodrigo/macOS-useful-automations-hammerspoon" 
                    target="_blank" 
@@ -482,13 +482,37 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Novo atalho: Terminal -->
+                <div class="shortcut-card">
+                    <div class="shortcut-header">
+                        <span class="shortcut-icon">🖥️</span>
+                        <span class="shortcut-title">Abrir Terminal e Colar</span>
+                        <span class="status-badge status-working">✅ Funciona</span>
+                    </div>
+                    <div class="shortcut-keys">⌘ ⇧ T</div>
+                    <div class="shortcut-description">
+                        Selecione qualquer texto e pressione o atalho para abrir o Terminal do Mac e colar automaticamente o texto selecionado. Ideal para comandos encontrados em tutoriais ou documentação.
+                    </div>
+                    <div class="shortcut-example">
+                        <strong>Como usar:</strong><br>
+                        1. Selecione texto em qualquer app<br>
+                        2. Pressione ⌘⇧T<br>
+                        3. Terminal abre com texto colado<br>
+                        <strong>Funciona com:</strong> Comandos, scripts, URLs, qualquer texto
+                    </div>
+                </div>
                 
                 <div style="margin-top: 20px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-left: 4px solid #3498db; border-radius: 5px;">
-                    <h4 style="color: #2980b9; margin-bottom: 10px;">🛠️ Configuração OCR</h4>
+                    <h4 style="color: #2980b9; margin-bottom: 10px;">🛠️ Configuração OCR - Estabilizada para Apple Silicon</h4>
                     <p><strong>Dependências:</strong> Tesseract instalado via Homebrew</p>
                     <code style="background: rgba(0,0,0,0.1); padding: 5px; border-radius: 3px;">brew install tesseract tesseract-lang</code>
-                    <p style="margin-top: 10px;"><strong>Permissões:</strong> Configurações → Privacidade → Gravação de Tela → Adicionar Hammerspoon</p>
-                    <p><strong>Idiomas:</strong> Português + Inglês (configurável)</p>
+                    <p style="margin-top: 10px;"><strong>Compatibilidade:</strong> ✅ Apple Silicon (M1/M2/M3) + Intel Macs</p>
+                    <p><strong>Detecção Automática:</strong> Localiza Tesseract em /opt/homebrew/bin (Apple Silicon) ou /usr/local/bin (Intel)</p>
+                    <p><strong>Permissões:</strong> Configurações → Privacidade → Gravação de Tela → Adicionar Hammerspoon</p>
+                    <p><strong>Idiomas:</strong> Português + Inglês com configurações otimizadas (--psm 6 --oem 3)</p>
+                    <p><strong>Fallback:</strong> Vision API nativo do macOS quando Tesseract não está disponível</p>
+                    <p><strong>Formatos Suportados:</strong> PNG, JPG, JPEG, GIF, BMP, TIFF, WebP, PDF</p>
                 </div>
             </div>
 
@@ -590,7 +614,7 @@
                     <li><strong>Copie o arquivo:</strong> <code>cp init.lua ~/.hammerspoon/init.lua</code></li>
                     <li><strong>Recarregue a configuração:</strong> Abra o Hammerspoon e clique em "Reload Config"</li>
                     <li><strong>Configure permissões:</strong> Vá em Configurações → Privacidade e Segurança → Acessibilidade e adicione o Hammerspoon</li>
-                    <li><strong>Teste os 12 atalhos!</strong> 🎉</li>
+                    <li><strong>Teste os 13 atalhos!</strong> 🎉</li>
                 </ol>
                 
                 <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.2); border-radius: 8px;">
