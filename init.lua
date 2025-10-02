@@ -401,5 +401,74 @@ hs.hotkey.bind({"shift","ctrl","cmd"}, "r", captureToFileThenOCR)
 hs.hotkey.bind({"shift","ctrl","cmd"}, "f", ocrClipboard)
 
 --------------------------------------------------------------------
-hs.alert("🔨 Atalhos Hammerspoon carregados! (12 ativos)")
+-- SECTION 13 ─ Abrir Terminal e colar texto  (⌘ ⇧ T)
+--------------------------------------------------------------------
+hs.hotkey.bind({"cmd","shift"}, "t", function()
+  -- Primeiro copia o texto selecionado
+  hs.eventtap.keyStroke({"cmd"}, "c")
+  
+  hs.timer.doAfter(0.3, function()
+    local selectedText = hs.pasteboard.getContents()
+    
+    if not selectedText or selectedText == "" then
+      hs.alert("⚠️ Nenhum texto selecionado")
+      return
+    end
+    
+    -- Remove quebras de linha extras e espaços desnecessários
+    selectedText = selectedText:gsub("^%s*(.-)%s*$", "%1") -- trim
+    
+    if selectedText == "" then
+      hs.alert("⚠️ Texto vazio após limpeza")
+      return
+    end
+    
+    -- Coloca o texto no clipboard
+    hs.pasteboard.setContents(selectedText)
+    
+    -- Abre e foca o Terminal (mais confiável que execute)
+    hs.application.launchOrFocus("Terminal")
+    
+    -- Aguarda o Terminal ficar em primeiro plano antes de colar
+    local maxWait = 20  -- 2 segundos (20 x 0.1s)
+    local waitCount = 0
+    
+    local checkFocus = function()
+      local frontApp = hs.application.frontmostApplication()
+      if frontApp and frontApp:name() == "Terminal" then
+        -- Terminal está em foco, pode colar
+        hs.eventtap.keyStroke({"cmd"}, "v")
+        
+        -- Mostra confirmação
+        local preview = selectedText
+        if #preview > 60 then
+          preview = preview:sub(1, 60) .. "..."
+        end
+        hs.alert("🖥️ Terminal aberto!\n📋 " .. preview, 3)
+        return true
+      end
+      return false
+    end
+    
+    -- Tenta imediatamente
+    if not checkFocus() then
+      -- Se não focou ainda, fica checando de 0.1 em 0.1s
+      local timer = hs.timer.doUntil(
+        function()
+          waitCount = waitCount + 1
+          return checkFocus() or waitCount >= maxWait
+        end,
+        function()
+          if waitCount >= maxWait then
+            hs.alert("⚠️ Timeout ao focar Terminal")
+          end
+        end,
+        0.1  -- checa a cada 0.1 segundo
+      )
+    end
+  end)
+end)
+
+--------------------------------------------------------------------
+hs.alert("🔨 Atalhos Hammerspoon carregados! (13 ativos)")
 --------------------------------------------------------------------

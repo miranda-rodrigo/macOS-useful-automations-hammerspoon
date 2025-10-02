@@ -168,22 +168,49 @@ function obj:start()
         return
       end
       
-      -- Abre o Terminal
-      hs.execute("open -a Terminal")
+      -- Coloca o texto no clipboard
+      hs.pasteboard.setContents(selectedText)
       
-      -- Aguarda um pouco para o Terminal abrir
-      hs.timer.doAfter(0.8, function()
-        -- Cola o texto no Terminal
-        hs.pasteboard.setContents(selectedText)
-        hs.eventtap.keyStroke({"cmd"}, "v")
-        
-        -- Mostra confirmação
-        local preview = selectedText
-        if #preview > 60 then
-          preview = preview:sub(1, 60) .. "..."
+      -- Abre e foca o Terminal (mais confiável que execute)
+      hs.application.launchOrFocus("Terminal")
+      
+      -- Aguarda o Terminal ficar em primeiro plano antes de colar
+      local maxWait = 20  -- 2 segundos (20 x 0.1s)
+      local waitCount = 0
+      
+      local checkFocus = function()
+        local frontApp = hs.application.frontmostApplication()
+        if frontApp and frontApp:name() == "Terminal" then
+          -- Terminal está em foco, pode colar
+          hs.eventtap.keyStroke({"cmd"}, "v")
+          
+          -- Mostra confirmação
+          local preview = selectedText
+          if #preview > 60 then
+            preview = preview:sub(1, 60) .. "..."
+          end
+          hs.alert("🖥️ Terminal aberto!\n📋 " .. preview, 3)
+          return true
         end
-        hs.alert("🖥️ Terminal aberto!\n📋 " .. preview, 3)
-      end)
+        return false
+      end
+      
+      -- Tenta imediatamente
+      if not checkFocus() then
+        -- Se não focou ainda, fica checando de 0.1 em 0.1s
+        local timer = hs.timer.doUntil(
+          function()
+            waitCount = waitCount + 1
+            return checkFocus() or waitCount >= maxWait
+          end,
+          function()
+            if waitCount >= maxWait then
+              hs.alert("⚠️ Timeout ao focar Terminal")
+            end
+          end,
+          0.1  -- checa a cada 0.1 segundo
+        )
+      end
     end)
   end)
 
