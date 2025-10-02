@@ -1,5 +1,5 @@
 --------------------------------------------------------------------
--- 🔨  Hammerspoon – Atalhos Personalizados (10 atalhos)
+-- 🔨  Hammerspoon – Atalhos Personalizados (12 atalhos)
 --------------------------------------------------------------------
 -- 1. ⌘ I            → Abrir arquivos/URLs/caminhos
 -- 2. ⌘ J            → Mission Control
@@ -11,6 +11,8 @@
 -- 8. ⌘ ⇧ U / var.   → Encurtador de URLs  (TinyURL / QR / Bit.ly)
 -- 9. ⌘ ⇧ W          → Copiar caminho do Finder
 -- 10. ⌘ ⌥ ⌃ R       → Text Replacement (Configurações)
+-- 11. ⇧ ⌃ ⌘ R       → OCR Reader (captura área da tela)
+-- 12. ⇧ ⌃ ⌘ F       → OCR de arquivo (imagem selecionada no Finder)
 --------------------------------------------------------------------
 
 --------------------------------------------------------------------
@@ -246,5 +248,266 @@ hs.hotkey.bind({"cmd","alt","ctrl"}, "r", function()
 end)
 
 --------------------------------------------------------------------
-hs.alert("🔨 Atalhos Hammerspoon carregados! (10 ativos)")
+-- SECTION 11 ─ OCR Reader  (⇧ ⌃ ⌘ R)
+--------------------------------------------------------------------
+-- Helper: Tenta salvar imagem da área de transferência
+local function saveClipboardImage()
+  local tempDir = os.getenv("TMPDIR") or "/tmp"
+  local tempFile = tempDir .. "/hammerspoon_clipboard_ocr.png"
+  
+  os.remove(tempFile)
+  
+  local script = string.format([[
+    try
+      set theImage to the clipboard as «class PNGf»
+      set theFile to open for access POSIX file "%s" with write permission
+      write theImage to theFile
+      close access theFile
+      return "success"
+    on error
+      try
+        close access theFile
+      end try
+      return "no_image"
+    end try
+  ]], tempFile)
+  
+  local ok, result = hs.osascript.applescript(script)
+  if ok and result == "success" then
+    return tempFile
+  end
+  return nil
+end
+
+hs.hotkey.bind({"shift","ctrl","cmd"}, "r", function()
+  local tempDir = os.getenv("TMPDIR") or "/tmp"
+  local tempImage = tempDir .. "/hammerspoon_ocr.png"
+  local imagePath = nil
+  
+  -- Primeiro tenta imagem da área de transferência
+  local clipboardImage = saveClipboardImage()
+  if clipboardImage then
+    hs.alert("📋 Processando imagem da área de transferência...")
+    imagePath = clipboardImage
+  else
+    -- Se não há imagem na área de transferência, captura da tela
+    hs.alert("🔍 Selecione área da tela com texto...")
+    
+    os.remove(tempImage)
+    
+    -- Tenta captura interativa
+    local captureCmd = string.format('screencapture -i -s "%s"', tempImage)
+    local success = os.execute(captureCmd)
+    
+    -- Verifica se arquivo foi criado e tem conteúdo
+    local attr = hs.fs.attributes(tempImage)
+    if success == 0 and attr and attr.size > 0 then
+      imagePath = tempImage
+      hs.alert("📸 Captura realizada! Processando...")
+    else
+      -- Verifica se é problema de permissões
+      hs.alert("❌ Falha na captura\n\n🔧 Solução:\n1. Vá em Configurações\n2. Privacidade → Gravação de Tela\n3. Adicione Hammerspoon\n4. Reinicie Hammerspoon", 6)
+      
+      -- Abre automaticamente as configurações
+      hs.timer.doAfter(1, function()
+        hs.execute('open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"')
+      end)
+      return
+    end
+  end
+  
+  if imagePath then
+    hs.alert("📝 Processando texto...")
+    
+    -- Usa OCR nativo do macOS via Python/Vision
+    hs.timer.doAfter(0.5, function()
+      -- Primeiro tenta Tesseract (mais confiável)
+      local tesseractCmd = string.format('tesseract "%s" stdout -l por+eng 2>/dev/null', imagePath)
+      local handle = io.popen(tesseractCmd)
+      local result = ""
+      
+      if handle then
+        result = handle:read("*a")
+        handle:close()
+      end
+      
+      -- Se Tesseract não funcionou, tenta Vision API
+      if not result or result:gsub("%s", "") == "" then
+        local pythonOCR = string.format([[
+python3 -c "
+import sys, os
+try:
+    # Usa Vision API (macOS 10.15+)
+    import Vision, Quartz, Foundation
+    
+    url = Foundation.NSURL.fileURLWithPath_('%s')
+    image = Quartz.CIImage.imageWithContentsOfURL_(url)
+    
+    if image:
+        request = Vision.VNRecognizeTextRequest.alloc().init()
+        request.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelAccurate)
+        request.setUsesLanguageCorrection_(True)
+        
+        handler = Vision.VNImageRequestHandler.alloc().initWithCIImage_options_(image, {})
+        success = handler.performRequests_error_([request], None)
+        
+        if success[0]:
+            observations = request.results()
+            if observations:
+                # Organiza texto por posição vertical
+                text_blocks = []
+                for obs in observations:
+                    text = obs.topCandidates_(1)[0].string()
+                    bbox = obs.boundingBox()
+                    y_pos = 1.0 - bbox.origin.y - bbox.size.height
+                    text_blocks.append((y_pos, text))
+                
+                # Ordena e agrupa
+                text_blocks.sort(reverse=True)
+                paragraphs = []
+                current_para = []
+                last_y = None
+                
+                for y_pos, text in text_blocks:
+                    if last_y is None or abs(last_y - y_pos) < 0.05:
+                        current_para.append(text)
+                    else:
+                        if current_para:
+                            paragraphs.append(' '.join(current_para))
+                        current_para = [text]
+                    last_y = y_pos
+                
+                if current_para:
+                    paragraphs.append(' '.join(current_para))
+                
+                result = '\\n\\n'.join(paragraphs).strip()
+                print(result)
+            else:
+                print('Nenhum texto encontrado')
+        else:
+            print('Erro no processamento Vision')
+    else:
+        print('Erro ao carregar imagem')
+        
+except ImportError:
+    print('Vision API não disponível')
+except Exception as e:
+    print(f'Erro Vision: {e}')
+"]], imagePath)
+        
+        local handle2 = io.popen(pythonOCR)
+        if handle2 then
+          result = handle2:read("*a")
+          handle2:close()
+        end
+      end
+      
+      -- Limpa arquivos temporários
+      os.remove(tempImage)
+      if clipboardImage then
+        os.remove(clipboardImage)
+      end
+      
+      if result and result ~= "" and not result:match("^Erro:") and not result:match("falhou") and not result:match("não disponível") then
+        -- Limpa e formata o texto
+        result = result:gsub("^%s*(.-)%s*$", "%1") -- trim
+        result = result:gsub("\n\n+", "\n\n") -- remove quebras excessivas
+        
+        -- Copia para clipboard
+        hs.pasteboard.setContents(result)
+        
+        -- Mostra preview
+        local preview = result
+        if #preview > 120 then
+          preview = preview:sub(1, 120) .. "..."
+        end
+        
+        hs.alert("✅ Texto extraído e copiado!\n\n" .. preview, 4)
+        
+        -- Log completo no console
+        print("=== OCR RESULTADO COMPLETO ===")
+        print(result)
+        print("============================")
+      else
+        hs.alert("❌ OCR falhou ou nenhum texto encontrado\n\nVerifique:\n• Qualidade da imagem\n• Contraste do texto\n• Idioma correto", 4)
+        print("=== DEBUG OCR ===")
+        print("Resultado bruto:", result)
+        print("==================")
+      end
+    end)
+  else
+    hs.alert("❌ Captura cancelada", 2)
+  end
+end)
+
+--------------------------------------------------------------------
+-- SECTION 12 ─ OCR de arquivo selecionado  (⇧ ⌃ ⌘ F)
+--------------------------------------------------------------------
+hs.hotkey.bind({"shift","ctrl","cmd"}, "f", function()
+  -- Pega arquivo selecionado no Finder
+  local script = [[
+    tell application "Finder"
+      set sel to selection
+      if sel is {} then return ""
+      set theItem to item 1 of sel
+      set itemPath to POSIX path of (theItem as alias)
+      set itemName to name of theItem
+      
+      -- Verifica se é uma imagem
+      if itemName ends with ".png" or itemName ends with ".jpg" or itemName ends with ".jpeg" or itemName ends with ".gif" or itemName ends with ".bmp" or itemName ends with ".tiff" or itemName ends with ".webp" then
+        return itemPath
+      else
+        return "not_image"
+      end if
+    end tell
+  ]]
+  
+  local ok, result = hs.osascript.applescript(script)
+  if ok and result ~= "" and result ~= "not_image" then
+    local imagePath = result:gsub("^%s*(.-)%s*$", "%1")  -- trim
+    hs.alert("📁 Processando arquivo selecionado...")
+    
+    hs.timer.doAfter(0.3, function()
+      -- Usa Tesseract
+      local tesseractCmd = string.format('tesseract "%s" stdout -l por+eng 2>/dev/null', imagePath)
+      local handle = io.popen(tesseractCmd)
+      local result = ""
+      
+      if handle then
+        result = handle:read("*a")
+        handle:close()
+      end
+      
+      if result and result:gsub("%s", "") ~= "" then
+        -- Limpa e formata o texto
+        result = result:gsub("^%s*(.-)%s*$", "%1") -- trim
+        result = result:gsub("\n\n+", "\n\n") -- remove quebras excessivas
+        
+        -- Copia para clipboard
+        hs.pasteboard.setContents(result)
+        
+        -- Mostra preview
+        local preview = result
+        if #preview > 120 then
+          preview = preview:sub(1, 120) .. "..."
+        end
+        
+        hs.alert("✅ Texto do arquivo extraído!\n\n" .. preview, 4)
+        
+        print("=== OCR ARQUIVO RESULTADO ===")
+        print(result)
+        print("===========================")
+      else
+        hs.alert("❌ Nenhum texto encontrado no arquivo", 3)
+      end
+    end)
+  elseif result == "not_image" then
+    hs.alert("⚠️ Selecione um arquivo de imagem\n(PNG, JPG, GIF, etc.)", 3)
+  else
+    hs.alert("⚠️ Selecione uma imagem no Finder primeiro", 3)
+  end
+end)
+
+--------------------------------------------------------------------
+hs.alert("🔨 Atalhos Hammerspoon carregados! (12 ativos)")
 --------------------------------------------------------------------
