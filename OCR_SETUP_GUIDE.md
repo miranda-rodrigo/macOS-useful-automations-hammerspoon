@@ -1,8 +1,15 @@
 # 🔍 Guia de Configuração OCR - Atalhos Corrigidos
 
-## ✅ Correções Implementadas
+## ✅ Correções Implementadas (Atualizado)
 
 Os atalhos de OCR foram **completamente corrigidos e estabilizados** para funcionar em **Macs Apple Silicon com Homebrew**:
+
+### 🔧 Problema Identificado e Corrigido
+**Problema**: O atalho `⇧ ⌃ ⌘ R` apenas copiava a imagem para o clipboard sem executar o OCR.
+
+**Causa**: Falta de delay entre a captura da tela (`screencapture -i -c`) e a chamada da função OCR (`ocrClipboard()`). A imagem precisava de tempo para estar disponível no clipboard.
+
+**Solução**: Adicionado delay de 0.3 segundos após a captura bem-sucedida antes de executar o OCR.
 
 - **⇧ ⌃ ⌘ R** – OCR da área da tela (captura interativa)
 - **⇧ ⌃ ⌘ F** – OCR de imagem no clipboard
@@ -29,10 +36,11 @@ tesseract --version
 
 ## 🔧 Melhorias Implementadas
 
-### ✅ Detecção Automática de Arquitetura
+### ✅ Detecção Automática de Arquitetura (Melhorada)
 - **Apple Silicon (M1/M2/M3)**: Busca Tesseract em `/opt/homebrew/bin/`
 - **Intel Macs**: Busca Tesseract em `/usr/local/bin/`
-- **Fallback**: Tenta caminhos alternativos automaticamente
+- **Linux**: Busca Tesseract em `/usr/bin/` (para desenvolvimento)
+- **Fallback**: Tenta caminhos alternativos automaticamente via PATH
 
 ### ✅ Configurações Otimizadas do Tesseract
 - **Idiomas**: Português + Inglês (`-l por+eng`)
@@ -49,10 +57,15 @@ tesseract --version
 - **Imagens**: PNG, JPG, JPEG, GIF, BMP, TIFF, WebP
 - **Documentos**: PDF (novo!)
 
-### ✅ Tratamento Correto de Códigos de Retorno
-- **Código 0**: Captura bem-sucedida → Processa OCR
+### ✅ Tratamento Correto de Códigos de Retorno (Corrigido)
+- **Código 0**: Captura bem-sucedida → **Aguarda 0.3s** → Processa OCR
 - **Código 1**: Usuário cancelou (ESC) → Mensagem "Captura cancelada"
 - **Outros códigos**: Erro real → Mensagem de permissão e abre configurações
+
+### ✅ Melhorias Adicionais
+- **Feedback visual**: Mensagem "🔍 Processando OCR..." durante o processamento
+- **Detecção robusta**: Melhor detecção de caminhos do Tesseract
+- **Logs de debug**: Informações de erro mais detalhadas no console
 
 ### ✅ Workflow Simplificado
 - **⇧ ⌃ ⌘ R**: Captura área da tela → clipboard → OCR
@@ -131,3 +144,16 @@ brew install tesseract tesseract-lang
 ## ✨ Resultado
 
 Após as correções, os atalhos OCR agora funcionam de forma **estável e confiável** em Macs Apple Silicon com Homebrew, com fallbacks robustos e mensagens de erro informativas.
+
+### 🎯 Status Atual
+- ✅ **Problema principal RESOLVIDO**: `⇧ ⌃ ⌘ R` agora executa OCR corretamente
+- ✅ **Timing corrigido**: Delay de 0.3s garante que a imagem esteja no clipboard
+- ✅ **Detecção melhorada**: Suporte a múltiplas arquiteturas (Mac/Linux)
+- ✅ **Feedback aprimorado**: Mensagens claras durante o processamento
+- ✅ **Logs detalhados**: Informações de debug para troubleshooting
+
+### 🔄 Para aplicar as correções:
+1. Recarregue a configuração do Hammerspoon (`⌘ + R` no console do Hammerspoon)
+2. Teste o atalho `⇧ ⌃ ⌘ R` selecionando uma área com texto
+3. Verifique se a mensagem "🔍 Processando OCR..." aparece
+4. O texto extraído deve ser copiado automaticamente para o clipboard

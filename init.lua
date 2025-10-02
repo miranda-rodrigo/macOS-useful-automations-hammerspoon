@@ -265,20 +265,37 @@ local function ocrClipboard()
     hs.alert("⚠️ Sem imagem no clipboard")
     return
   end
+  
+  hs.alert("🔍 Processando OCR...")
   local tmp = (os.getenv("TMPDIR") or "/tmp") .. "/hsp_clip_ocr.png"
   os.remove(tmp)
   img:saveToFile(tmp)
 
-  if have("tesseract") then
-    local out = {}
-    -- Detecta caminho do Tesseract automaticamente
-    local tesseractPath = "/opt/homebrew/bin/tesseract"  -- Apple Silicon
-    if not have("tesseract") or not hs.fs.attributes(tesseractPath) then
-      tesseractPath = "/usr/local/bin/tesseract"  -- Intel Mac
-      if not hs.fs.attributes(tesseractPath) then
-        tesseractPath = "tesseract"  -- PATH
+  -- Detecta caminho do Tesseract automaticamente
+  local tesseractPath = nil
+  local possiblePaths = {
+    "/opt/homebrew/bin/tesseract",  -- Apple Silicon Mac
+    "/usr/local/bin/tesseract",     -- Intel Mac
+    "/usr/bin/tesseract",           -- Linux
+    "tesseract"                     -- PATH
+  }
+  
+  for _, path in ipairs(possiblePaths) do
+    if path == "tesseract" then
+      if have("tesseract") then
+        tesseractPath = path
+        break
+      end
+    else
+      if hs.fs.attributes(path) then
+        tesseractPath = path
+        break
       end
     end
+  end
+  
+  if tesseractPath then
+    local out = {}
     
     local t = hs.task.new(tesseractPath, function(exitCode, stdout, stderr)
       os.remove(tmp)
@@ -286,15 +303,17 @@ local function ocrClipboard()
       result = result:gsub("^%s*(.-)%s*$","%1"):gsub("\n\n+","\n\n")
       if exitCode==0 and result~="" then
         hs.pasteboard.setContents(result)
-        hs.alert("✅ OCR copiado do clipboard")
+        hs.alert("✅ OCR copiado!")
         print("=== OCR (tesseract) ===\n"..result.."\n=======================")
       else
         hs.alert("❌ OCR vazio/falhou (tesseract)")
+        print("OCR Error - Exit code: " .. exitCode .. ", stderr: " .. (stderr or ""))
       end
     end, {tmp, "stdout", "-l", OCR_LANGS})
     t:setStdoutCallback(function(_, data) table.insert(out, data or "") end)
     t:start()
   else
+    hs.alert("❌ Tesseract não encontrado. Instale: brew install tesseract")
     -- Fallback: Vision via Python (se tiver PyObjC)
     local py = [[
 import sys,Foundation,Quartz,Vision
@@ -335,8 +354,10 @@ local function captureToClipboardThenOCR()
   -- Captura interativa PARA O CLIPBOARD (sem arquivo): -i -c
   local t = hs.task.new("/usr/sbin/screencapture", function(exitCode)
     if exitCode==0 then
-      -- Agora OCR do que estiver no clipboard
-      ocrClipboard()
+      -- Aguarda um momento para a imagem estar disponível no clipboard
+      hs.timer.doAfter(0.3, function()
+        ocrClipboard()
+      end)
     elseif exitCode==1 then
       hs.alert("❌ Captura cancelada")
     else
