@@ -12,7 +12,7 @@
 -- 9. ⌘ ⇧ W          → Copiar caminho do Finder
 -- 10. ⌘ ⌥ ⌃ R       → Text Replacement (Configurações)
 -- 11. ⇧ ⌃ ⌘ R       → OCR Reader (captura área da tela)
--- 12. ⇧ ⌃ ⌘ F       → OCR de arquivo (imagem selecionada no Finder)
+-- 12. ⇧ ⌃ ⌘ F       → OCR de imagem no clipboard
 --------------------------------------------------------------------
 
 --------------------------------------------------------------------
@@ -248,384 +248,115 @@ hs.hotkey.bind({"cmd","alt","ctrl"}, "r", function()
 end)
 
 --------------------------------------------------------------------
--- SECTION 11 ─ OCR Reader  (⇧ ⌃ ⌘ R)
+-- SECTION 11 ─ OCR Reader  (⇧ ⌃ ⌘ R e ⇧ ⌃ ⌘ F)
 --------------------------------------------------------------------
--- Helper: Detecta caminho do Tesseract baseado na arquitetura
-local function getTesseractPath()
-  -- Tenta caminhos comuns do Tesseract em ordem de preferência
-  local paths = {
-    "/opt/homebrew/bin/tesseract",  -- Apple Silicon Homebrew
-    "/usr/local/bin/tesseract",     -- Intel Homebrew
-    "/usr/bin/tesseract",           -- Sistema
-    "tesseract"                     -- PATH
-  }
-  
-  for _, path in ipairs(paths) do
-    local testCmd = string.format('command -v "%s" >/dev/null 2>&1', path)
-    if os.execute(testCmd) == 0 then
-      return path
+-- OCR simples: captura → clipboard → OCR
+--------------------------------------------------------------------
+local OCR_LANGS = "por+eng"
+
+local function have(cmd)
+  local ok,_,_,rc = hs.execute('command -v '..cmd..' >/dev/null 2>&1; echo $?')
+  return ok and rc=="0\n"
+end
+
+local function ocrClipboard()
+  local img = hs.image.imageFromClipboard()
+  if not img then
+    hs.alert("⚠️ Sem imagem no clipboard")
+    return
+  end
+  local tmp = (os.getenv("TMPDIR") or "/tmp") .. "/hsp_clip_ocr.png"
+  os.remove(tmp)
+  img:saveToFile(tmp)
+
+  if have("tesseract") then
+    local out = {}
+    -- Detecta caminho do Tesseract automaticamente
+    local tesseractPath = "/opt/homebrew/bin/tesseract"  -- Apple Silicon
+    if not have("tesseract") or not hs.fs.attributes(tesseractPath) then
+      tesseractPath = "/usr/local/bin/tesseract"  -- Intel Mac
+      if not hs.fs.attributes(tesseractPath) then
+        tesseractPath = "tesseract"  -- PATH
+      end
     end
-  end
-  
-  return nil
-end
-
--- Helper: Tenta salvar imagem da área de transferência
-local function saveClipboardImage()
-  local tempDir = os.getenv("TMPDIR") or "/tmp"
-  local tempFile = tempDir .. "/hammerspoon_clipboard_ocr.png"
-  
-  os.remove(tempFile)
-  
-  local script = string.format([[
-    try
-      set theImage to the clipboard as «class PNGf»
-      set theFile to open for access POSIX file "%s" with write permission
-      write theImage to theFile
-      close access theFile
-      return "success"
-    on error
-      try
-        close access theFile
-      end try
-      return "no_image"
-    end try
-  ]], tempFile)
-  
-  local ok, result = hs.osascript.applescript(script)
-  if ok and result == "success" then
-    return tempFile
-  end
-  return nil
-end
-
--- Helper: Executa OCR usando Tesseract
-local function performTesseractOCR(imagePath)
-  local tesseractPath = getTesseractPath()
-  if not tesseractPath then
-    return nil, "Tesseract não encontrado. Instale com: brew install tesseract tesseract-lang"
-  end
-  
-  -- Comando Tesseract com múltiplos idiomas e configurações otimizadas
-  local tesseractCmd = string.format('"%s" "%s" stdout -l por+eng --psm 6 --oem 3 2>/dev/null', tesseractPath, imagePath)
-  local handle = io.popen(tesseractCmd)
-  
-  if not handle then
-    return nil, "Erro ao executar Tesseract"
-  end
-  
-  local result = handle:read("*a")
-  local success = handle:close()
-  
-  if result and result:gsub("%s", "") ~= "" then
-    return result:gsub("^%s*(.-)%s*$", "%1"), nil  -- trim whitespace
-  end
-  
-  return nil, "Nenhum texto detectado"
-end
-
-hs.hotkey.bind({"shift","ctrl","cmd"}, "r", function()
-  local tempDir = os.getenv("TMPDIR") or "/tmp"
-  local tempImage = tempDir .. "/hammerspoon_ocr.png"
-  local imagePath = nil
-  
-  -- Primeiro tenta imagem da área de transferência
-  local clipboardImage = saveClipboardImage()
-  if clipboardImage then
-    hs.alert("📋 Processando imagem da área de transferência...")
-    imagePath = clipboardImage
+    
+    local t = hs.task.new(tesseractPath, function(exitCode, stdout, stderr)
+      os.remove(tmp)
+      local result = table.concat(out)
+      result = result:gsub("^%s*(.-)%s*$","%1"):gsub("\n\n+","\n\n")
+      if exitCode==0 and result~="" then
+        hs.pasteboard.setContents(result)
+        hs.alert("✅ OCR copiado do clipboard")
+        print("=== OCR (tesseract) ===\n"..result.."\n=======================")
+      else
+        hs.alert("❌ OCR vazio/falhou (tesseract)")
+      end
+    end, {tmp, "stdout", "-l", OCR_LANGS})
+    t:setStdoutCallback(function(_, data) table.insert(out, data or "") end)
+    t:start()
   else
-    -- Se não há imagem na área de transferência, captura da tela
-    hs.alert("🔍 Selecione área da tela com texto...")
-    
-    os.remove(tempImage)
-    
-    -- Tenta captura interativa
-    local captureCmd = string.format('screencapture -i -s "%s"', tempImage)
-    local success = os.execute(captureCmd)
-    
-    -- Verifica se arquivo foi criado e tem conteúdo
-    local attr = hs.fs.attributes(tempImage)
-    if success == 0 and attr and attr.size > 0 then
-      imagePath = tempImage
-      hs.alert("📸 Captura realizada! Processando...")
+    -- Fallback: Vision via Python (se tiver PyObjC)
+    local py = [[
+import sys,Foundation,Quartz,Vision
+from Cocoa import NSURL
+p = sys.argv[1]
+url = Foundation.NSURL.fileURLWithPath_(p)
+img = Quartz.CIImage.imageWithContentsOfURL_(url)
+req = Vision.VNRecognizeTextRequest.new()
+req.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelAccurate)
+req.setUsesLanguageCorrection_(True)
+h = Vision.VNImageRequestHandler.alloc().initWithCIImage_options_(img,{})
+ok = h.performRequests_error_([req], None)
+res=[]
+if ok[0]:
+    for o in req.results() or []:
+        c = o.topCandidates_(1)
+        if c and len(c)>0: res.append(c[0].string())
+print("\\n".join(res))
+]]
+    local out = {}
+    local t = hs.task.new("/usr/bin/python3", function(exitCode, stdout, stderr)
+      os.remove(tmp)
+      local result = table.concat(out)
+      result = result:gsub("^%s*(.-)%s*$","%1"):gsub("\n\n+","\n\n")
+      if exitCode==0 and result~="" then
+        hs.pasteboard.setContents(result)
+        hs.alert("✅ OCR copiado (Vision)")
+      else
+        hs.alert("❌ OCR falhou (Vision). Instale tesseract: brew install tesseract")
+      end
+    end, {"-c", py, tmp})
+    t:setStdoutCallback(function(_, data) table.insert(out, data or "") end)
+    t:start()
+  end
+end
+
+local function captureToClipboardThenOCR()
+  -- Captura interativa PARA O CLIPBOARD (sem arquivo): -i -c
+  local t = hs.task.new("/usr/sbin/screencapture", function(exitCode)
+    if exitCode==0 then
+      -- Agora OCR do que estiver no clipboard
+      ocrClipboard()
+    elseif exitCode==1 then
+      hs.alert("❌ Captura cancelada")
     else
-      -- Verifica se é problema de permissões
-      hs.alert("❌ Falha na captura\n\n🔧 Solução:\n1. Vá em Configurações\n2. Privacidade → Gravação de Tela\n3. Adicione Hammerspoon\n4. Reinicie Hammerspoon", 6)
-      
-      -- Abre automaticamente as configurações
-      hs.timer.doAfter(1, function()
+      hs.alert("⚠️ Falha na captura. Dê permissão em Privacidade > Screen Recording p/ Hammerspoon")
+      hs.timer.doAfter(0.8, function()
         hs.execute('open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"')
       end)
-      return
     end
-  end
-  
-  if imagePath then
-    hs.alert("📝 Processando texto...")
-    
-    hs.timer.doAfter(0.5, function()
-      -- Tenta Tesseract primeiro
-      local result, error = performTesseractOCR(imagePath)
-      
-      -- Se Tesseract falhou, tenta Vision API (somente no macOS)
-      if not result then
-        local pythonOCR = string.format([[
-python3 -c "
-import sys, os
-try:
-    # Usa Vision API (macOS 10.15+)
-    import Vision, Quartz, Foundation
-    
-    url = Foundation.NSURL.fileURLWithPath_('%s')
-    image = Quartz.CIImage.imageWithContentsOfURL_(url)
-    
-    if image:
-        request = Vision.VNRecognizeTextRequest.alloc().init()
-        request.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelAccurate)
-        request.setUsesLanguageCorrection_(True)
-        
-        handler = Vision.VNImageRequestHandler.alloc().initWithCIImage_options_(image, {})
-        success = handler.performRequests_error_([request], None)
-        
-        if success[0]:
-            observations = request.results()
-            if observations:
-                # Organiza texto por posição vertical
-                text_blocks = []
-                for obs in observations:
-                    text = obs.topCandidates_(1)[0].string()
-                    bbox = obs.boundingBox()
-                    y_pos = 1.0 - bbox.origin.y - bbox.size.height
-                    text_blocks.append((y_pos, text))
-                
-                # Ordena e agrupa
-                text_blocks.sort(reverse=True)
-                paragraphs = []
-                current_para = []
-                last_y = None
-                
-                for y_pos, text in text_blocks:
-                    if last_y is None or abs(last_y - y_pos) < 0.05:
-                        current_para.append(text)
-                    else:
-                        if current_para:
-                            paragraphs.append(' '.join(current_para))
-                        current_para = [text]
-                    last_y = y_pos
-                
-                if current_para:
-                    paragraphs.append(' '.join(current_para))
-                
-                result = '\\n\\n'.join(paragraphs).strip()
-                print(result)
-            else:
-                print('Nenhum texto encontrado')
-        else:
-            print('Erro no processamento Vision')
-    else:
-        print('Erro ao carregar imagem')
-        
-except ImportError:
-    print('Vision API não disponível')
-except Exception as e:
-    print(f'Erro Vision: {e}')
-"]], imagePath)
-        
-        local handle = io.popen(pythonOCR)
-        if handle then
-          local visionResult = handle:read("*a")
-          handle:close()
-          
-          if visionResult and visionResult:gsub("%s", "") ~= "" and 
-             not visionResult:match("não disponível") and 
-             not visionResult:match("Erro") then
-            result = visionResult:gsub("^%s*(.-)%s*$", "%1")
-          end
-        end
-      end
-      
-      -- Limpa arquivos temporários
-      os.remove(tempImage)
-      if clipboardImage then
-        os.remove(clipboardImage)
-      end
-      
-      if result and result ~= "" then
-        -- Limpa e formata o texto
-        result = result:gsub("\n\n+", "\n\n") -- remove quebras excessivas
-        
-        -- Copia para clipboard
-        hs.pasteboard.setContents(result)
-        
-        -- Mostra preview
-        local preview = result
-        if #preview > 120 then
-          preview = preview:sub(1, 120) .. "..."
-        end
-        
-        hs.alert("✅ Texto extraído e copiado!\n\n" .. preview, 4)
-        
-        -- Log completo no console
-        print("=== OCR RESULTADO COMPLETO ===")
-        print(result)
-        print("============================")
-      else
-        local errorMsg = error or "Nenhum texto detectado"
-        hs.alert("❌ OCR falhou: " .. errorMsg .. "\n\n🔧 Soluções:\n• Instale Tesseract: brew install tesseract tesseract-lang\n• Verifique qualidade da imagem\n• Use imagens com bom contraste", 6)
-        print("=== DEBUG OCR ===")
-        print("Erro:", errorMsg)
-        print("==================")
-      end
-    end)
-  else
-    hs.alert("❌ Captura cancelada", 2)
-  end
-end)
+  end, {"-i","-c"})
+  t:start()
+end
 
 --------------------------------------------------------------------
--- SECTION 12 ─ OCR de arquivo selecionado  (⇧ ⌃ ⌘ F)
+-- Atalhos
 --------------------------------------------------------------------
-hs.hotkey.bind({"shift","ctrl","cmd"}, "f", function()
-  -- Pega arquivo selecionado no Finder
-  local script = [[
-    tell application "Finder"
-      set sel to selection
-      if sel is {} then return ""
-      set theItem to item 1 of sel
-      set itemPath to POSIX path of (theItem as alias)
-      set itemName to name of theItem
-      
-      -- Verifica se é uma imagem (extensões suportadas)
-      if itemName ends with ".png" or itemName ends with ".jpg" or itemName ends with ".jpeg" or 
-         itemName ends with ".gif" or itemName ends with ".bmp" or itemName ends with ".tiff" or 
-         itemName ends with ".webp" or itemName ends with ".PDF" or itemName ends with ".pdf" then
-        return itemPath
-      else
-        return "not_image"
-      end if
-    end tell
-  ]]
-  
-  local ok, result = hs.osascript.applescript(script)
-  if ok and result ~= "" and result ~= "not_image" then
-    local imagePath = result:gsub("^%s*(.-)%s*$", "%1")  -- trim
-    hs.alert("📁 Processando arquivo selecionado...")
-    
-    hs.timer.doAfter(0.3, function()
-      -- Usa função melhorada do Tesseract
-      local ocrResult, error = performTesseractOCR(imagePath)
-      
-      -- Se Tesseract falhou, tenta Vision API como fallback
-      if not ocrResult then
-        local pythonOCR = string.format([[
-python3 -c "
-import sys, os
-try:
-    # Usa Vision API (macOS 10.15+)
-    import Vision, Quartz, Foundation
-    
-    url = Foundation.NSURL.fileURLWithPath_('%s')
-    image = Quartz.CIImage.imageWithContentsOfURL_(url)
-    
-    if image:
-        request = Vision.VNRecognizeTextRequest.alloc().init()
-        request.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelAccurate)
-        request.setUsesLanguageCorrection_(True)
-        
-        handler = Vision.VNImageRequestHandler.alloc().initWithCIImage_options_(image, {})
-        success = handler.performRequests_error_([request], None)
-        
-        if success[0]:
-            observations = request.results()
-            if observations:
-                # Organiza texto por posição vertical
-                text_blocks = []
-                for obs in observations:
-                    text = obs.topCandidates_(1)[0].string()
-                    bbox = obs.boundingBox()
-                    y_pos = 1.0 - bbox.origin.y - bbox.size.height
-                    text_blocks.append((y_pos, text))
-                
-                # Ordena e agrupa
-                text_blocks.sort(reverse=True)
-                paragraphs = []
-                current_para = []
-                last_y = None
-                
-                for y_pos, text in text_blocks:
-                    if last_y is None or abs(last_y - y_pos) < 0.05:
-                        current_para.append(text)
-                    else:
-                        if current_para:
-                            paragraphs.append(' '.join(current_para))
-                        current_para = [text]
-                    last_y = y_pos
-                
-                if current_para:
-                    paragraphs.append(' '.join(current_para))
-                
-                result = '\\n\\n'.join(paragraphs).strip()
-                print(result)
-            else:
-                print('Nenhum texto encontrado')
-        else:
-            print('Erro no processamento Vision')
-    else:
-        print('Erro ao carregar imagem')
-        
-except ImportError:
-    print('Vision API não disponível')
-except Exception as e:
-    print(f'Erro Vision: {e}')
-"]], imagePath)
-        
-        local handle = io.popen(pythonOCR)
-        if handle then
-          local visionResult = handle:read("*a")
-          handle:close()
-          
-          if visionResult and visionResult:gsub("%s", "") ~= "" and 
-             not visionResult:match("não disponível") and 
-             not visionResult:match("Erro") then
-            ocrResult = visionResult:gsub("^%s*(.-)%s*$", "%1")
-          end
-        end
-      end
-      
-      if ocrResult and ocrResult ~= "" then
-        -- Limpa e formata o texto
-        ocrResult = ocrResult:gsub("\n\n+", "\n\n") -- remove quebras excessivas
-        
-        -- Copia para clipboard
-        hs.pasteboard.setContents(ocrResult)
-        
-        -- Mostra preview
-        local preview = ocrResult
-        if #preview > 120 then
-          preview = preview:sub(1, 120) .. "..."
-        end
-        
-        hs.alert("✅ Texto do arquivo extraído!\n\n" .. preview, 4)
-        
-        print("=== OCR ARQUIVO RESULTADO ===")
-        print(ocrResult)
-        print("===========================")
-      else
-        local errorMsg = error or "Nenhum texto detectado no arquivo"
-        hs.alert("❌ OCR falhou: " .. errorMsg .. "\n\n🔧 Soluções:\n• Instale Tesseract: brew install tesseract tesseract-lang\n• Verifique se é uma imagem válida\n• Use arquivos com boa qualidade", 6)
-        print("=== DEBUG OCR ARQUIVO ===")
-        print("Arquivo:", imagePath)
-        print("Erro:", errorMsg)
-        print("========================")
-      end
-    end)
-  elseif result == "not_image" then
-    hs.alert("⚠️ Selecione um arquivo de imagem\n(PNG, JPG, PDF, GIF, etc.)", 3)
-  else
-    hs.alert("⚠️ Selecione uma imagem no Finder primeiro", 3)
-  end
-end)
+-- ⇧ ⌃ ⌘ R → Selecionar área → copiar para clipboard → OCR
+hs.hotkey.bind({"shift","ctrl","cmd"}, "r", captureToClipboardThenOCR)
+
+-- ⇧ ⌃ ⌘ F → OCR do que já estiver no clipboard (ex.: você copiou uma imagem do Preview/Finder)
+hs.hotkey.bind({"shift","ctrl","cmd"}, "f", ocrClipboard)
 
 --------------------------------------------------------------------
 hs.alert("🔨 Atalhos Hammerspoon carregados! (12 ativos)")

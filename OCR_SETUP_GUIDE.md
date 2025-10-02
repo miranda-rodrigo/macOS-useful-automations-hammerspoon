@@ -4,8 +4,8 @@
 
 Os atalhos de OCR foram **completamente corrigidos e estabilizados** para funcionar em **Macs Apple Silicon com Homebrew**:
 
-- **⇧ ⌃ ⌘ R** – OCR da área da tela / imagem da área de transferência
-- **⇧ ⌃ ⌘ F** – OCR do arquivo de imagem selecionado no Finder
+- **⇧ ⌃ ⌘ R** – OCR da área da tela (captura interativa)
+- **⇧ ⌃ ⌘ F** – OCR de imagem no clipboard
 
 ## 🛠️ Instalação Obrigatória
 
@@ -49,6 +49,16 @@ tesseract --version
 - **Imagens**: PNG, JPG, JPEG, GIF, BMP, TIFF, WebP
 - **Documentos**: PDF (novo!)
 
+### ✅ Tratamento Correto de Códigos de Retorno
+- **Código 0**: Captura bem-sucedida → Processa OCR
+- **Código 1**: Usuário cancelou (ESC) → Mensagem "Captura cancelada"
+- **Outros códigos**: Erro real → Mensagem de permissão e abre configurações
+
+### ✅ Workflow Simplificado
+- **⇧ ⌃ ⌘ R**: Captura área da tela → clipboard → OCR
+- **⇧ ⌃ ⌘ F**: OCR direto do que está no clipboard
+- **Uso de hs.task**: Execução assíncrona sem travamentos
+
 ## 🚀 Como Usar
 
 ### OCR de Área da Tela (⇧ ⌃ ⌘ R)
@@ -63,11 +73,11 @@ tesseract --version
    - Pressione `⇧ ⌃ ⌘ R`
    - Texto da imagem é extraído
 
-### OCR de Arquivo (⇧ ⌃ ⌘ F)
+### OCR de Imagem no Clipboard (⇧ ⌃ ⌘ F)
 
-1. Selecione um arquivo de imagem no Finder
+1. Copie qualquer imagem (⌘C) - do Preview, Finder, navegador, etc.
 2. Pressione `⇧ ⌃ ⌘ F`
-3. Texto é extraído e copiado
+3. Texto da imagem é extraído e copiado automaticamente
 
 ## 🔍 Teste de Configuração
 
