@@ -1,5 +1,5 @@
 --------------------------------------------------------------------
--- 🔨  Hammerspoon – Atalhos Personalizados (12 atalhos)
+-- 🔨  Hammerspoon – Atalhos Personalizados (14 atalhos)
 --------------------------------------------------------------------
 -- 1. ⌘ I            → Abrir arquivos/URLs/caminhos
 -- 2. ⌘ J            → Mission Control
@@ -13,6 +13,8 @@
 -- 10. ⌘ ⌥ ⌃ R       → Text Replacement (Configurações)
 -- 11. ⇧ ⌃ ⌘ R       → OCR Reader (captura área da tela)
 -- 12. ⇧ ⌃ ⌘ F       → OCR de imagem no clipboard
+-- 13. ⇧ ⌃ ⌘ O       → OCR de arquivo de imagem selecionado
+-- 14. ⌘ ⇧ T         → Abrir Terminal e colar texto
 --------------------------------------------------------------------
 
 --------------------------------------------------------------------
@@ -267,8 +269,9 @@ local function ocrFromImage(img, imagePath)
   
   hs.alert("🔍 Processando OCR...")
   local tmp = imagePath or ((os.getenv("TMPDIR") or "/tmp") .. "/hsp_ocr_temp.png")
+  local shouldCleanup = not imagePath
   
-  if not imagePath then
+  if shouldCleanup then
     os.remove(tmp)
     img:saveToFile(tmp)
   end
@@ -298,9 +301,6 @@ local function ocrFromImage(img, imagePath)
   if tesseractPath then
     local out = {}
     local t = hs.task.new(tesseractPath, function(exitCode, stdout, stderr)
-      if imagePath then
-        os.remove(tmp)
-      end
       local result = table.concat(out)
       result = result:gsub("^%s*(.-)%s*$","%1"):gsub("\n\n+","\n\n")
       if exitCode==0 and result~="" then
@@ -310,6 +310,9 @@ local function ocrFromImage(img, imagePath)
       else
         hs.alert("❌ OCR vazio/falhou (tesseract)")
         print("OCR Error - Exit code: " .. exitCode .. ", stderr: " .. (stderr or ""))
+      end
+      if shouldCleanup then
+        os.remove(tmp)
       end
     end, {tmp, "stdout", "-l", OCR_LANGS})
     t:setStdoutCallback(function(_, data) table.insert(out, data or "") end)
@@ -336,9 +339,6 @@ print("\n".join(res))
 ]]
     local out = {}
     local t = hs.task.new("/usr/bin/python3", function(exitCode, stdout, stderr)
-      if imagePath then
-        os.remove(tmp)
-      end
       local result = table.concat(out)
       result = result:gsub("^%s*(.-)%s*$","%1"):gsub("\n\n+","\n\n")
       if exitCode==0 and result~="" then
@@ -346,6 +346,9 @@ print("\n".join(res))
         hs.alert("✅ OCR copiado (Vision)")
       else
         hs.alert("❌ OCR falhou (Vision). Instale tesseract: brew install tesseract")
+      end
+      if shouldCleanup then
+        os.remove(tmp)
       end
     end, {"-c", py, tmp})
     t:setStdoutCallback(function(_, data) table.insert(out, data or "") end)
@@ -391,6 +394,67 @@ local function captureToFileThenOCR()
   t:start()
 end
 
+local function ocrFromSelectedFile()
+  -- Tenta obter o caminho do clipboard primeiro
+  local filePath = hs.pasteboard.getContents()
+  
+  -- Se não houver nada no clipboard ou não for um arquivo válido, tenta o Finder
+  if not filePath or filePath == "" or not hs.fs.attributes(filePath) then
+    local script = [[
+      tell application "Finder"
+        if (count of selection) = 0 then return ""
+        POSIX path of (item 1 of selection as alias)
+      end tell
+    ]]
+    local ok, result = hs.osascript.applescript(script)
+    if ok and result ~= "" then
+      filePath = result:match("^%s*(.-)%s*$")
+    else
+      hs.alert("⚠️ Nenhum arquivo selecionado")
+      return
+    end
+  end
+  
+  -- Remove prefixo file:// se existir
+  filePath = filePath:gsub("^file://", "")
+  
+  -- Verifica se é um arquivo de imagem
+  local validExtensions = {
+    [".png"] = true,
+    [".jpg"] = true,
+    [".jpeg"] = true,
+    [".gif"] = true,
+    [".bmp"] = true,
+    [".tiff"] = true,
+    [".tif"] = true,
+    [".webp"] = true
+  }
+  
+  local ext = filePath:match("%.([^%.]+)$")
+  if ext then
+    ext = "." .. ext:lower()
+  end
+  
+  if not ext or not validExtensions[ext] then
+    hs.alert("⚠️ Arquivo não é uma imagem suportada\nExtensões: png, jpg, jpeg, gif, bmp, tiff, webp")
+    return
+  end
+  
+  -- Verifica se o arquivo existe
+  if not hs.fs.attributes(filePath) then
+    hs.alert("⚠️ Arquivo não encontrado:\n" .. filePath)
+    return
+  end
+  
+  -- Carrega a imagem e processa OCR
+  local img = hs.image.imageFromPath(filePath)
+  if img then
+    ocrFromImage(img, filePath)
+  else
+    hs.alert("❌ Erro ao carregar imagem")
+  end
+end
+
 --------------------------------------------------------------------
 -- Atalhos
 --------------------------------------------------------------------
@@ -399,6 +463,9 @@ hs.hotkey.bind({"shift","ctrl","cmd"}, "r", captureToFileThenOCR)
 
 -- ⇧ ⌃ ⌘ F → OCR do que já estiver no clipboard (ex.: você copiou uma imagem do Preview/Finder)
 hs.hotkey.bind({"shift","ctrl","cmd"}, "f", ocrClipboard)
+
+-- ⇧ ⌃ ⌘ O → OCR de arquivo de imagem selecionado (Finder ou texto copiado)
+hs.hotkey.bind({"shift","ctrl","cmd"}, "o", ocrFromSelectedFile)
 
 --------------------------------------------------------------------
 -- SECTION 13 ─ Abrir Terminal e colar texto  (⌘ ⇧ T)
@@ -470,5 +537,5 @@ hs.hotkey.bind({"cmd","shift"}, "t", function()
 end)
 
 --------------------------------------------------------------------
-hs.alert("🔨 Atalhos Hammerspoon carregados! (13 ativos)")
+hs.alert("🔨 Atalhos Hammerspoon carregados! (14 ativos)")
 --------------------------------------------------------------------
