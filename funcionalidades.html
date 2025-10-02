@@ -484,11 +484,15 @@
                 </div>
                 
                 <div style="margin-top: 20px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-left: 4px solid #3498db; border-radius: 5px;">
-                    <h4 style="color: #2980b9; margin-bottom: 10px;">🛠️ Configuração OCR</h4>
+                    <h4 style="color: #2980b9; margin-bottom: 10px;">🛠️ Configuração OCR - Estabilizada para Apple Silicon</h4>
                     <p><strong>Dependências:</strong> Tesseract instalado via Homebrew</p>
                     <code style="background: rgba(0,0,0,0.1); padding: 5px; border-radius: 3px;">brew install tesseract tesseract-lang</code>
-                    <p style="margin-top: 10px;"><strong>Permissões:</strong> Configurações → Privacidade → Gravação de Tela → Adicionar Hammerspoon</p>
-                    <p><strong>Idiomas:</strong> Português + Inglês (configurável)</p>
+                    <p style="margin-top: 10px;"><strong>Compatibilidade:</strong> ✅ Apple Silicon (M1/M2/M3) + Intel Macs</p>
+                    <p><strong>Detecção Automática:</strong> Localiza Tesseract em /opt/homebrew/bin (Apple Silicon) ou /usr/local/bin (Intel)</p>
+                    <p><strong>Permissões:</strong> Configurações → Privacidade → Gravação de Tela → Adicionar Hammerspoon</p>
+                    <p><strong>Idiomas:</strong> Português + Inglês com configurações otimizadas (--psm 6 --oem 3)</p>
+                    <p><strong>Fallback:</strong> Vision API nativo do macOS quando Tesseract não está disponível</p>
+                    <p><strong>Formatos Suportados:</strong> PNG, JPG, JPEG, GIF, BMP, TIFF, WebP, PDF</p>
                 </div>
             </div>
 
