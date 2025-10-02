@@ -255,8 +255,9 @@ end)
 local OCR_LANGS = "por+eng"
 
 local function have(cmd)
-  local ok,_,_,rc = hs.execute('command -v '..cmd..' >/dev/null 2>&1; echo $?')
-  return ok and rc=="0\n"
+  -- Verifica se um binário está disponível no PATH
+  local _, success = hs.execute('command -v "'..cmd..'" >/dev/null 2>&1')
+  return success == true
 end
 
 local function ocrFromImage(img, imagePath)
@@ -311,7 +312,7 @@ local function ocrFromImage(img, imagePath)
         hs.alert("❌ OCR vazio/falhou (tesseract)")
         print("OCR Error - Exit code: " .. exitCode .. ", stderr: " .. (stderr or ""))
       end
-    end, {tmp, "stdout", "-l", OCR_LANGS})
+    end, {tmp, "stdout", "-l", OCR_LANGS, "--psm", "6", "--oem", "3"})
     t:setStdoutCallback(function(_, data) table.insert(out, data or "") end)
     t:start()
   else
@@ -362,6 +363,126 @@ local function ocrClipboard()
   ocrFromImage(img)
 end
 
+-- OCR direto de um arquivo (imagem/PDF) no disco, sem apagar o arquivo original
+local function ocrFilePath(filePath)
+  if not filePath or filePath == "" then
+    hs.alert("⚠️ Caminho inválido")
+    return
+  end
+  local attr = hs.fs.attributes(filePath)
+  if not attr or attr.mode ~= "file" then
+    hs.alert("⚠️ Arquivo não encontrado")
+    return
+  end
+
+  local ext = string.lower((filePath:match("%.([%w]+)$") or ""))
+  local allowed = { png=true, jpg=true, jpeg=true, gif=true, bmp=true, tiff=true, tif=true, webp=true, pdf=true }
+  if not allowed[ext] then
+    hs.alert("⚠️ Extensão não suportada para OCR")
+    return
+  end
+
+  hs.alert("🔍 Processando OCR do arquivo…")
+
+  -- Detecta caminho do Tesseract automaticamente
+  local tesseractPath = nil
+  local possiblePaths = {
+    "/opt/homebrew/bin/tesseract",
+    "/usr/local/bin/tesseract",
+    "/usr/bin/tesseract",
+    "tesseract"
+  }
+  for _, path in ipairs(possiblePaths) do
+    if path == "tesseract" then
+      if have("tesseract") then tesseractPath = path; break end
+    else
+      if hs.fs.attributes(path) then tesseractPath = path; break end
+    end
+  end
+
+  if tesseractPath then
+    local out = {}
+    local t = hs.task.new(tesseractPath, function(exitCode, stdout, stderr)
+      local result = table.concat(out)
+      result = result:gsub("^%s*(.-)%s*$","%1"):gsub("\n\n+","\n\n")
+      if exitCode==0 and result~="" then
+        hs.pasteboard.setContents(result)
+        hs.alert("✅ OCR copiado!")
+        print("=== OCR (tesseract:file) ===\n"..result.."\n=======================")
+      else
+        hs.alert("❌ OCR vazio/falhou (tesseract)")
+        print("OCR Error - Exit code: " .. exitCode .. ", stderr: " .. (stderr or ""))
+      end
+    end, {filePath, "stdout", "-l", OCR_LANGS, "--psm", "6", "--oem", "3"})
+    t:setStdoutCallback(function(_, data) table.insert(out, data or "") end)
+    t:start()
+  else
+    if ext == "pdf" then
+      hs.alert("❌ Tesseract é necessário para PDF. Instale com brew install tesseract")
+      return
+    end
+    -- Fallback Vision apenas para imagens
+    local py = [[
+import sys,Foundation,Quartz,Vision
+from Cocoa import NSURL
+p = sys.argv[1]
+url = Foundation.NSURL.fileURLWithPath_(p)
+img = Quartz.CIImage.imageWithContentsOfURL_(url)
+req = Vision.VNRecognizeTextRequest.new()
+req.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelAccurate)
+req.setUsesLanguageCorrection_(True)
+h = Vision.VNImageRequestHandler.alloc().initWithCIImage_options_(img,{})
+ok = h.performRequests_error_([req], None)
+res=[]
+if ok[0]:
+    for o in req.results() or []:
+        c = o.topCandidates_(1)
+        if c and len(c)>0: res.append(c[0].string())
+print("\n".join(res))
+]]
+    local out = {}
+    local t = hs.task.new("/usr/bin/python3", function(exitCode, stdout, stderr)
+      local result = table.concat(out)
+      result = result:gsub("^%s*(.-)%s*$","%1"):gsub("\n\n+","\n\n")
+      if exitCode==0 and result~="" then
+        hs.pasteboard.setContents(result)
+        hs.alert("✅ OCR copiado (Vision)")
+      else
+        hs.alert("❌ OCR falhou (Vision). Instale tesseract: brew install tesseract")
+      end
+    end, {"-c", py, filePath})
+    t:setStdoutCallback(function(_, data) table.insert(out, data or "") end)
+    t:start()
+  end
+end
+
+-- Obtém o primeiro arquivo selecionado no Finder (como caminho POSIX)
+local function getFinderSelectionPath()
+  local script = [[
+    tell application "Finder"
+      set sel to selection
+      if sel is {} then return ""
+      set theItem to item 1 of sel
+      return POSIX path of (theItem as alias)
+    end tell
+  ]]
+  local ok, result = hs.osascript.applescript(script)
+  if ok and result and result ~= "" then
+    return result:match("^%s*(.-)%s*$")
+  end
+  return nil
+end
+
+-- OCR do arquivo atualmente selecionado no Finder
+local function ocrSelectedFile()
+  local path = getFinderSelectionPath()
+  if not path or path == "" then
+    hs.alert("⚠️ Selecione um arquivo de imagem/PDF no Finder")
+    return
+  end
+  ocrFilePath(path)
+end
+
 local function captureToFileThenOCR()
   local tmp = (os.getenv("TMPDIR") or "/tmp") .. "/hsp_screen_capture.png"
   os.remove(tmp)
@@ -399,6 +520,9 @@ hs.hotkey.bind({"shift","ctrl","cmd"}, "r", captureToFileThenOCR)
 
 -- ⇧ ⌃ ⌘ F → OCR do que já estiver no clipboard (ex.: você copiou uma imagem do Preview/Finder)
 hs.hotkey.bind({"shift","ctrl","cmd"}, "f", ocrClipboard)
+
+-- ⇧ ⌃ ⌘ O → OCR do arquivo selecionado no Finder (imagens/PDF)
+hs.hotkey.bind({"shift","ctrl","cmd"}, "o", ocrSelectedFile)
 
 --------------------------------------------------------------------
 -- SECTION 13 ─ Abrir Terminal e colar texto  (⌘ ⇧ T)
@@ -470,5 +594,5 @@ hs.hotkey.bind({"cmd","shift"}, "t", function()
 end)
 
 --------------------------------------------------------------------
-hs.alert("🔨 Atalhos Hammerspoon carregados! (13 ativos)")
+hs.alert("🔨 Atalhos Hammerspoon carregados! (14 ativos)")
 --------------------------------------------------------------------
