@@ -259,43 +259,63 @@ local function have(cmd)
   return ok and rc=="0\n"
 end
 
-local function ocrClipboard()
-  local img = hs.image.imageFromClipboard()
+local function ocrFromImage(img, imagePath)
   if not img then
-    hs.alert("⚠️ Sem imagem no clipboard")
+    hs.alert("⚠️ Imagem inválida")
     return
   end
-  local tmp = (os.getenv("TMPDIR") or "/tmp") .. "/hsp_clip_ocr.png"
-  os.remove(tmp)
-  img:saveToFile(tmp)
+  
+  hs.alert("🔍 Processando OCR...")
+  local tmp = imagePath or ((os.getenv("TMPDIR") or "/tmp") .. "/hsp_ocr_temp.png")
+  
+  if not imagePath then
+    os.remove(tmp)
+    img:saveToFile(tmp)
+  end
 
-  if have("tesseract") then
-    local out = {}
-    -- Detecta caminho do Tesseract automaticamente
-    local tesseractPath = "/opt/homebrew/bin/tesseract"  -- Apple Silicon
-    if not have("tesseract") or not hs.fs.attributes(tesseractPath) then
-      tesseractPath = "/usr/local/bin/tesseract"  -- Intel Mac
-      if not hs.fs.attributes(tesseractPath) then
-        tesseractPath = "tesseract"  -- PATH
+  local tesseractPath = nil
+  local possiblePaths = {
+    "/opt/homebrew/bin/tesseract",
+    "/usr/local/bin/tesseract",
+    "/usr/bin/tesseract",
+    "tesseract"
+  }
+  
+  for _, path in ipairs(possiblePaths) do
+    if path == "tesseract" then
+      if have("tesseract") then
+        tesseractPath = path
+        break
+      end
+    else
+      if hs.fs.attributes(path) then
+        tesseractPath = path
+        break
       end
     end
-    
+  end
+  
+  if tesseractPath then
+    local out = {}
     local t = hs.task.new(tesseractPath, function(exitCode, stdout, stderr)
-      os.remove(tmp)
+      if imagePath then
+        os.remove(tmp)
+      end
       local result = table.concat(out)
       result = result:gsub("^%s*(.-)%s*$","%1"):gsub("\n\n+","\n\n")
       if exitCode==0 and result~="" then
         hs.pasteboard.setContents(result)
-        hs.alert("✅ OCR copiado do clipboard")
+        hs.alert("✅ OCR copiado!")
         print("=== OCR (tesseract) ===\n"..result.."\n=======================")
       else
         hs.alert("❌ OCR vazio/falhou (tesseract)")
+        print("OCR Error - Exit code: " .. exitCode .. ", stderr: " .. (stderr or ""))
       end
     end, {tmp, "stdout", "-l", OCR_LANGS})
     t:setStdoutCallback(function(_, data) table.insert(out, data or "") end)
     t:start()
   else
-    -- Fallback: Vision via Python (se tiver PyObjC)
+    hs.alert("❌ Tesseract não encontrado. Instale: brew install tesseract")
     local py = [[
 import sys,Foundation,Quartz,Vision
 from Cocoa import NSURL
@@ -312,11 +332,13 @@ if ok[0]:
     for o in req.results() or []:
         c = o.topCandidates_(1)
         if c and len(c)>0: res.append(c[0].string())
-print("\\n".join(res))
+print("\n".join(res))
 ]]
     local out = {}
     local t = hs.task.new("/usr/bin/python3", function(exitCode, stdout, stderr)
-      os.remove(tmp)
+      if imagePath then
+        os.remove(tmp)
+      end
       local result = table.concat(out)
       result = result:gsub("^%s*(.-)%s*$","%1"):gsub("\n\n+","\n\n")
       if exitCode==0 and result~="" then
@@ -331,29 +353,49 @@ print("\\n".join(res))
   end
 end
 
-local function captureToClipboardThenOCR()
-  -- Captura interativa PARA O CLIPBOARD (sem arquivo): -i -c
+local function ocrClipboard()
+  local img = hs.image.imageFromClipboard()
+  if not img then
+    hs.alert("⚠️ Sem imagem no clipboard")
+    return
+  end
+  ocrFromImage(img)
+end
+
+local function captureToFileThenOCR()
+  local tmp = (os.getenv("TMPDIR") or "/tmp") .. "/hsp_screen_capture.png"
+  os.remove(tmp)
+  
   local t = hs.task.new("/usr/sbin/screencapture", function(exitCode)
     if exitCode==0 then
-      -- Agora OCR do que estiver no clipboard
-      ocrClipboard()
+      hs.timer.doAfter(0.1, function()
+        local img = hs.image.imageFromPath(tmp)
+        if img then
+          ocrFromImage(img, tmp)
+        else
+          hs.alert("❌ Erro ao carregar imagem capturada")
+          os.remove(tmp)
+        end
+      end)
     elseif exitCode==1 then
       hs.alert("❌ Captura cancelada")
+      os.remove(tmp)
     else
       hs.alert("⚠️ Falha na captura. Dê permissão em Privacidade > Screen Recording p/ Hammerspoon")
+      os.remove(tmp)
       hs.timer.doAfter(0.8, function()
         hs.execute('open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"')
       end)
     end
-  end, {"-i","-c"})
+  end, {"-i", tmp})
   t:start()
 end
 
 --------------------------------------------------------------------
 -- Atalhos
 --------------------------------------------------------------------
--- ⇧ ⌃ ⌘ R → Selecionar área → copiar para clipboard → OCR
-hs.hotkey.bind({"shift","ctrl","cmd"}, "r", captureToClipboardThenOCR)
+-- ⇧ ⌃ ⌘ R → Selecionar área → salvar em arquivo → OCR
+hs.hotkey.bind({"shift","ctrl","cmd"}, "r", captureToFileThenOCR)
 
 -- ⇧ ⌃ ⌘ F → OCR do que já estiver no clipboard (ex.: você copiou uma imagem do Preview/Finder)
 hs.hotkey.bind({"shift","ctrl","cmd"}, "f", ocrClipboard)

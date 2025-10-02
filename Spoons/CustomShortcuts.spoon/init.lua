@@ -1,6 +1,6 @@
 --- === CustomShortcuts ===
 ---
---- 7 atalhos personalizados para otimizar workflow no macOS
+--- 8 atalhos personalizados para otimizar workflow no macOS
 ---
 --- Download: https://github.com/miranda-rodrigo/macOS-useful-automations-hammerspoon
 --- 
@@ -12,6 +12,7 @@
 ---   • ⌘ ⌥ ⌃ A → Activity Monitor
 ---   • ⌘ ⌥ ⌃ P → Passwords
 ---   • ⌘ ⌥ ⌃ Space → Show Desktop
+---   • ⌘ ⇧ T → Abrir Terminal e colar texto selecionado
 
 local obj = {}
 obj.__index = obj
@@ -146,7 +147,47 @@ function obj:start()
     hs.alert("🖥️ Show Desktop")
   end)
 
-  hs.alert("🔨 CustomShortcuts carregado! 7 atalhos ativos.")
+  -- ⌘ ⇧ T → Abrir Terminal e colar texto selecionado
+  self.hotkeys[#self.hotkeys + 1] = hs.hotkey.bind({"cmd","shift"}, "t", function()
+    -- Primeiro copia o texto selecionado
+    hs.eventtap.keyStroke({"cmd"}, "c")
+    
+    hs.timer.doAfter(0.3, function()
+      local selectedText = hs.pasteboard.getContents()
+      
+      if not selectedText or selectedText == "" then
+        hs.alert("⚠️ Nenhum texto selecionado")
+        return
+      end
+      
+      -- Remove quebras de linha extras e espaços desnecessários
+      selectedText = selectedText:gsub("^%s*(.-)%s*$", "%1") -- trim
+      
+      if selectedText == "" then
+        hs.alert("⚠️ Texto vazio após limpeza")
+        return
+      end
+      
+      -- Abre o Terminal
+      hs.execute("open -a Terminal")
+      
+      -- Aguarda um pouco para o Terminal abrir
+      hs.timer.doAfter(0.8, function()
+        -- Cola o texto no Terminal
+        hs.pasteboard.setContents(selectedText)
+        hs.eventtap.keyStroke({"cmd"}, "v")
+        
+        -- Mostra confirmação
+        local preview = selectedText
+        if #preview > 60 then
+          preview = preview:sub(1, 60) .. "..."
+        end
+        hs.alert("🖥️ Terminal aberto!\n📋 " .. preview, 3)
+      end)
+    end)
+  end)
+
+  hs.alert("🔨 CustomShortcuts carregado! 8 atalhos ativos.")
   return self
 end
 
