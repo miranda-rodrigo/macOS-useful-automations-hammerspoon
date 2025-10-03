@@ -1,5 +1,5 @@
 --------------------------------------------------------------------
--- 🔨  Hammerspoon – Atalhos Personalizados (12 atalhos)
+-- 🔨  Hammerspoon – Atalhos Personalizados (13 atalhos)
 --------------------------------------------------------------------
 -- 1. ⌘ I            → Abrir arquivos/URLs/caminhos
 -- 2. ⌘ J            → Mission Control
@@ -13,6 +13,7 @@
 -- 10. ⌘ ⌥ ⌃ R       → Text Replacement (Configurações)
 -- 11. ⇧ ⌃ ⌘ R       → OCR Reader (captura área da tela)
 -- 12. ⇧ ⌃ ⌘ F       → OCR de imagem no clipboard
+-- 13. ⇧ ⌃ ⌘ Y       → Transcrever vídeo do YouTube
 --------------------------------------------------------------------
 
 --------------------------------------------------------------------
@@ -315,6 +316,12 @@ hs.hotkey.bind({"cmd","shift"}, "t", function()
     end
   end)
 end)
+
+--------------------------------------------------------------------
+-- SECTION 14 ─ YouTube Transcriber (⇧ ⌃ ⌘ Y) - usando Spoon
+--------------------------------------------------------------------
+hs.loadSpoon("YouTubeTranscriber")
+spoon.YouTubeTranscriber:start()
 
 --------------------------------------------------------------------
 hs.alert("🔨 Atalhos Hammerspoon carregados! (13 ativos)")
