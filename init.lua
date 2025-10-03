@@ -13,6 +13,7 @@
 -- 10. ⌘ ⌥ ⌃ R       → Text Replacement (Configurações)
 -- 11. ⇧ ⌃ ⌘ R       → OCR Reader (captura área da tela)
 -- 12. ⇧ ⌃ ⌘ F       → OCR de imagem no clipboard
+-- 13. ⇧ ⌃ ⌘ Y       → Transcrever YouTube (yt-dlp → clipboard)
 --------------------------------------------------------------------
 
 --------------------------------------------------------------------
@@ -245,6 +246,15 @@ hs.hotkey.bind({"cmd","alt","ctrl"}, "r", function()
   -- Abre diretamente o painel Text Replacement nas Configurações do Sistema
   hs.execute("open 'x-apple.systempreferences:com.apple.preference.keyboard?Text'")
   hs.alert("⌨️ Text Replacement")
+end)
+
+--------------------------------------------------------------------
+-- SECTION 12.1 ─ YouTube Transcriber  (⇧ ⌃ ⌘ Y)
+--------------------------------------------------------------------
+-- Carrega Spoon para transcrever vídeo do YouTube e copiar o texto
+-- Atalho: Shift+Ctrl+Cmd+Y (definido dentro do Spoon)
+pcall(function()
+  hs.loadSpoon("YouTubeTranscriber"):start()
 end)
 
 --------------------------------------------------------------------
